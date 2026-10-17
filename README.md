@@ -46,7 +46,7 @@ It also covers **Flatpak** and **Snap**, which work on any distro (except Snap o
 
 Tasks: `refresh`, `upgrade`, `install`, `remove`, `search`, `info`, `list`, `orphans`, `clean`.
 
-There are a few extras hidden in there too, like `neofetch` and `cowsay`. Try `sudo rm -rf /` (don't worry, it says no).
+There are a few extras hidden in there too, like `neofetch` and `cowsay`. And whatever you do, don't run `sudo rm -rf /` 👀
 
 **Shortcuts:** ↑/↓ for command history, Tab to autocomplete, Ctrl+L to clear. On phones, use the buttons at the bottom.
 

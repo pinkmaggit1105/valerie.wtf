@@ -136,6 +136,19 @@
         .dim { color: var(--dim); }
         .bold { font-weight: bold; }
 
+        /* rm -rf / easter egg */
+        .window.glitch { animation: shake 0.12s infinite; }
+        .window.glitch #screen { filter: hue-rotate(90deg) contrast(1.6); }
+        @keyframes shake {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-3px, 2px) skewX(1deg); }
+            50% { transform: translate(3px, -2px); }
+            75% { transform: translate(-2px, -3px) skewX(-1deg); }
+            100% { transform: translate(0, 0); }
+        }
+        .window.dead .titlebar, .window.dead .chips, .window.dead .inputline { visibility: hidden; }
+        .window.dead #screen { background: #000; color: #fff; }
+
         @media (max-width: 600px) {
             html, body { font-size: 13px; }
             body { padding: 0; }
@@ -749,8 +762,11 @@
             const [name, ...args] = line.trim().split(/\s+/);
             if (!name) return;
 
-            if (/^sudo rm -rf \/\*?$/.test(line.trim().replace(/\s+/g, " "))) {
-                print("[red]absolutely not 😭[/] this deletes your whole system. never run it.");
+            const rm = line.trim().replace(/\s+/g, " ").match(/^(sudo )?rm (-rf|-fr|-r -f|-f -r|-Rf|-rF)( --no-preserve-root)? \/\*?( --no-preserve-root)?$/);
+            if (rm) {
+                if (rm[1]) { meltdown(); return; }
+                ["bin", "boot", "etc", "root", "usr"].forEach(d => print(`rm: cannot remove '/${d}': Permission denied`));
+                print("[dim]...you're not root. thank god. (don't try it with sudo 👀)[/]");
                 return;
             }
 
@@ -777,6 +793,7 @@
         const COMPLETIONS = [...Object.keys(COMMANDS), ...Object.keys(DISTROS).map(d => "use " + d), ...Object.keys(TASKS).flatMap(t => ["learn " + t, "compare " + t]), ...Object.keys(MANAGERS).map(m => "about " + m)];
 
         input.addEventListener("keydown", e => {
+            if (busy) { e.preventDefault(); return; }
             if (e.key === "Enter") {
                 const v = input.value;
                 input.value = "";
@@ -805,23 +822,119 @@
         screen.addEventListener("click", () => { if (!window.getSelection().toString()) input.focus(); });
 
         document.querySelectorAll(".chips button").forEach(b => b.addEventListener("click", () => {
+            if (busy) return;
             run(b.dataset.cmd);
             updatePrompt();
             scrollDown();
             input.focus();
         }));
 
+        // ---------- sudo rm -rf / ----------
+
+        let busy = false;
+        const win = document.querySelector(".window");
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        const DOOMED = [
+            "/bin/bash", "/bin/ls", "/bin/cat", "/bin/sudo", "/boot/vmlinuz-linux", "/boot/initramfs-linux.img",
+            "/boot/grub/grub.cfg", "/etc/passwd", "/etc/shadow", "/etc/fstab", "/etc/hostname", "/etc/os-release",
+            "/home/you/Documents/homework_FINAL_v3.docx", "/home/you/Pictures/memes", "/home/you/.bash_history",
+            "/home/you/.config/discord", "/home/you/Downloads/totally_legal_movie.mkv", "/home/you/.ssh/id_ed25519",
+            "/lib/modules/6.11.0-wtf", "/lib/systemd/systemd", "/opt/google/chrome", "/root/.bashrc",
+            "/usr/bin/python3", "/usr/bin/vim", "/usr/bin/firefox", "/usr/lib/libc.so.6", "/usr/lib/libstdc++.so.6",
+            "/usr/share/fonts", "/usr/share/icons", "/var/log/syslog", "/var/lib/dpkg/status", "/var/lib/pacman/local"
+        ];
+
+        async function meltdown() {
+            busy = true;
+            input.blur();
+            print("[dim]rm: it is dangerous to operate recursively on '/'... oh you used sudo. ok. bye 🫡[/]");
+            await sleep(900);
+
+            for (let i = 0; i < 140; i++) {
+                const path = i < DOOMED.length ? DOOMED[i] : DOOMED[Math.floor(Math.random() * DOOMED.length)] + "/" + Math.random().toString(36).slice(2, 9);
+                print(`removed '${path}'`);
+                if (i === 70) print("[red]bash: /usr/bin/ls: No such file or directory[/]");
+                if (i === 85) print("[red]bash: /usr/bin/sleep: cannot execute: required file not found[/]");
+                if (i === 100) { print("[red]Segmentation fault (core dumped)[/]"); win.classList.add("glitch"); }
+                if (i === 115) print("[red]systemd[1]: Caught <SEGV>, dumped core as pid 666.[/]");
+                scrollDown();
+                await sleep(i < 40 ? 35 : 12);
+            }
+            await sleep(700);
+
+            win.classList.remove("glitch");
+            win.classList.add("dead");
+            out.innerHTML = "";
+            const t = (performance.now() / 1000).toFixed(6).padStart(12);
+            const code = "0x00007f00";
+            [
+                `[${t}] Kernel panic - not syncing: Attempted to kill init! exitcode=${code}`,
+                `[${t}] CPU: 0 PID: 1 Comm: systemd Not tainted 6.11.0-wtf #1`,
+                `[${t}] Hardware name: valerie.wtf/Browser Tab, BIOS 1.0 10/17/2026`,
+                `[${t}] Call Trace:`,
+                `[${t}]  <TASK>`,
+                `[${t}]  dump_stack_lvl+0x5d/0x80`,
+                `[${t}]  panic+0x118/0x2f0`,
+                `[${t}]  do_exit.cold+0x15/0x15`,
+                `[${t}]  do_group_exit+0x2d/0x90`,
+                `[${t}]  __x64_sys_exit_group+0x18/0x20`,
+                `[${t}]  do_syscall_64+0x82/0x160`,
+                `[${t}]  entry_SYSCALL_64_after_hwframe+0x76/0x7e`,
+                `[${t}]  </TASK>`,
+                `[${t}] Kernel Offset: disabled`,
+                `[${t}] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=${code} ]---`
+            ].forEach(l => print("", l));
+            await sleep(2500);
+            print("", "\n(your caps lock light is blinking. you did this.)\n\npress any key or tap to reboot");
+            scrollDown();
+
+            await new Promise(res => {
+                const go = () => { window.removeEventListener("keydown", go); window.removeEventListener("pointerdown", go); res(); };
+                window.addEventListener("keydown", go);
+                window.addEventListener("pointerdown", go);
+            });
+            await reboot();
+        }
+
+        async function reboot() {
+            out.innerHTML = "";
+            win.classList.remove("dead");
+            for (const l of ["[dim]valerie.wtf BIOS v1.0 — POST OK[/]", "[dim]Booting from rescue USB...[/]", "", "Loading Linux 6.11.0-wtf ...", "Loading initial ramdisk ..."]) {
+                print(l);
+                await sleep(350);
+            }
+            for (const unit of ["Restoring / from backup (phew)", "Reinstalling literally everything", "Mounting /home (your memes survived)", "Starting Journal Service", "Started Network Manager", "Reached target Graphical Interface"]) {
+                print(` [ [green]  OK  [/] ] ${unit}.`);
+                scrollDown();
+                await sleep(300);
+            }
+            await sleep(600);
+            out.innerHTML = "";
+            boot();
+            print("[yellow]💀 you deleted your entire system. luckily this is a website.[/]");
+            print("[dim]fun fact: real `rm` refuses `-rf /` without --no-preserve-root, but `rm -rf /*` has no failsafe at all. never run either![/]\n");
+            busy = false;
+            updatePrompt();
+            scrollDown();
+            input.focus();
+        }
+
         // ---------- boot ----------
 
-        print("[green]██╗   ██╗ █████╗ ██╗     ███████╗██████╗ ██╗███████╗[/]");
-        print("[green]██║   ██║██╔══██╗██║     ██╔════╝██╔══██╗██║██╔════╝[/]");
-        print("[green]╚██╗ ██╔╝███████║██║     █████╗  ██████╔╝██║█████╗  [/]");
-        print("[green] ╚████╔╝ ██╔══██║██║     ██╔══╝  ██╔══██╗██║██╔══╝  [/]");
-        print("[green]  ╚═══╝  ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝╚══════╝[/]");
-        out.querySelectorAll(".line").forEach(l => l.classList.add("banner"));
-        print();
-        print("welcome to [green]valerie.wtf[/]! learn your distro's package manager by typing it.");
-        print("start with `distros`, then `use mint` (or arch, fedora...). type `help` for everything.\n");
+        function boot() {
+            print("[green]██╗   ██╗ █████╗ ██╗     ███████╗██████╗ ██╗███████╗[/]");
+            print("[green]██║   ██║██╔══██╗██║     ██╔════╝██╔══██╗██║██╔════╝[/]");
+            print("[green]╚██╗ ██╔╝███████║██║     █████╗  ██████╔╝██║█████╗  [/]");
+            print("[green] ╚████╔╝ ██╔══██║██║     ██╔══╝  ██╔══██╗██║██╔══╝  [/]");
+            print("[green]  ╚═══╝  ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝╚══════╝[/]");
+            out.querySelectorAll(".line").forEach(l => l.classList.add("banner"));
+            print();
+            print("welcome to [green]valerie.wtf[/]! learn your distro's package manager by typing it.");
+            print("start with `distros`, then `use mint` (or arch, fedora...). type `help` for everything.\n");
+        }
+
+        boot();
         try {
             const saved = localStorage.getItem("distro");
             if (DISTROS[saved]) { distroKey = saved; print(`[dim]welcome back! still on ${DISTROS[saved].name}.[/]\n`); }
