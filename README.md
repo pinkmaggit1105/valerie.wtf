@@ -42,6 +42,7 @@ It also covers **Flatpak** and **Snap**, which work on any distro (except Snap o
 | `compare <task>` | One task across every package manager |
 | `about <manager>` | Everything about one package manager |
 | `quiz` | Test yourself (`hint`, `skip`, `quit`) |
+| `game` | Play Package Panic |
 | `contact` | How to reach me |
 
 Tasks: `refresh`, `upgrade`, `install`, `remove`, `search`, `info`, `list`, `orphans`, `clean`.
@@ -50,9 +51,17 @@ There are LOTS of easter eggs hidden in there too, like `neofetch`, `cowsay` and
 
 **Shortcuts:** ↑/↓ for command history, Tab to autocomplete, Ctrl+L to clear. On phones, use the buttons at the bottom.
 
+## Package Panic 🎮
+
+A typing game at [valerie.wtf/game](https://valerie.wtf/game). Package requests like "Arch: install git" fall from the top, and you type the right command (`sudo pacman -S git`) before they hit the floor. Combos multiply your score, it gets faster the longer you last, and every miss shows you the right answer. Pick `easy` (Mint, Ubuntu, Debian, Arch, Manjaro, Fedora and four tasks) or `hard` (every distro, every task).
+
 ## How it's built
 
-It's a single `index.html` with plain HTML, CSS and JavaScript: no frameworks, no build step, no dependencies. It's hosted on GitHub Pages with the custom domain set in `CNAME`.
+Each page is a single HTML file with plain HTML, CSS and JavaScript: no frameworks, no build step, no dependencies. It's hosted on GitHub Pages with the custom domain set in `CNAME`.
+
+- `index.html`: the terminal
+- `game/index.html`: Package Panic
+- `archive/`: snapshots of older versions of the site, like `terminal-v1.html`
 
 To run it locally, just open `index.html` in a browser.
 

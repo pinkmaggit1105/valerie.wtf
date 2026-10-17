@@ -574,6 +574,7 @@
                 print("  `compare <task>`       one task across every package manager");
                 print("  `about <manager>`      everything about apt, pacman, flatpak, yay...");
                 print("  `quiz`                 test yourself 🧠");
+                print("  `game`                 play Package Panic 🎮");
                 print("  `neofetch`, `whoami`, `uname`, `date`, `cowsay`, `contact`, `history`, `clear`\n");
                 print("or just type a real command like `sudo apt install firefox` and I'll explain it.");
                 print("[dim]there are also a LOT of secrets hidden in here 👀[/]");
@@ -716,6 +717,13 @@
             sl() { train(); },
 
             cmatrix() { matrix(); },
+
+            game() {
+                print("🎮 loading [green]Package Panic[/]... type the right command before the requests hit the floor!");
+                setTimeout(() => { location.href = "game/"; }, 700);
+            },
+
+            play() { COMMANDS.game(); },
 
             fortune() {
                 const f = [
