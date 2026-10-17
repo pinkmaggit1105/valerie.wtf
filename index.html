@@ -35,6 +35,7 @@
         }
 
         body {
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -148,6 +149,35 @@
         }
         .window.dead .titlebar, .window.dead .chips, .window.dead .inputline { visibility: hidden; }
         .window.dead #screen { background: #000; color: #fff; }
+
+        /* fork bomb clones, sl train, cmatrix */
+        .bomb {
+            position: fixed;
+            width: 220px;
+            padding: 26px 10px 10px;
+            background: var(--panel);
+            border: 1px solid #3a3a3a;
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+            font-size: 12px;
+            white-space: pre;
+            z-index: 5;
+        }
+        .bomb::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 18px; background: var(--bar); border-radius: 6px 6px 0 0; }
+        .train {
+            position: fixed;
+            left: 0;
+            top: 30%;
+            z-index: 10;
+            white-space: pre;
+            line-height: 1.15;
+            color: var(--fg);
+            animation: choo 7s linear forwards;
+        }
+        @keyframes choo { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
+        .overlay { position: fixed; inset: 0; z-index: 10; background: #000; }
+        .line:has(.vim-intro) { position: relative; }
+        .vim-intro { position: absolute; left: 0; right: 0; text-align: center; }
 
         @media (max-width: 600px) {
             html, body { font-size: 13px; }
@@ -461,16 +491,19 @@
             div.className = "line";
             div.innerHTML = fmt(s) + esc(plain);
             out.appendChild(div);
+            return div;
         }
 
         // classic bash look: bold green user@host, bold blue path
         function promptMarkup() {
+            if (vim) return "";
             if (quiz) return "[pb]quiz>[/]";
             return `[pu]${distroKey ? "you@" + distroKey : "valerie@valerie.wtf"}[/]:[pp]~[/]$`;
         }
 
         function updatePrompt() {
             promptEl.innerHTML = fmt(promptMarkup());
+            if (vim) { titleEl.textContent = `${vim.file || "[No Name]"} - VIM`; return; }
             titleEl.textContent = distroKey ? `you@${distroKey}: ~ (${DISTROS[distroKey].name})` : "valerie@valerie.wtf: ~";
         }
 
@@ -543,6 +576,7 @@
                 print("  `quiz`                 test yourself 🧠");
                 print("  `neofetch`, `whoami`, `uname`, `date`, `cowsay`, `contact`, `history`, `clear`\n");
                 print("or just type a real command like `sudo apt install firefox` and I'll explain it.");
+                print("[dim]there are also a LOT of secrets hidden in here 👀[/]");
                 print(`[dim]tasks: ${Object.keys(TASKS).join(", ")}[/]`);
             },
 
@@ -667,8 +701,48 @@
             sudo(args) {
                 if (!args.length) print("usage: sudo <command>");
                 else if (args[0] === "su" || args[0] === "-i") print("[red]nice try.[/] root access denied 🙂");
+                else if (COMMANDS[args[0]] && args[0] !== "sudo") COMMANDS[args[0]](args.slice(1));
                 else print(`[red]sudo: ${args[0]}: command not found[/]`);
-            }
+            },
+
+            vim(args) { openVim(args[0]); },
+            vi(args) { openVim(args[0]); },
+            nvim(args) { openVim(args[0]); },
+
+            emacs() { print("emacs is a great operating system, lacking only a decent editor. [dim](try `vim`. if you dare 👀)[/]"); },
+
+            nano() { print("[green]nano[/] is honestly a great pick for beginners. Ctrl+O saves, Ctrl+X exits, and the shortcuts are printed at the bottom 💚\n[dim]want to suffer instead? try `vim`.[/]"); },
+
+            sl() { train(); },
+
+            cmatrix() { matrix(); },
+
+            fortune() {
+                const f = [
+                    "There is no place like 127.0.0.1",
+                    "It's not a bug, it's an undocumented feature.",
+                    "To understand recursion, you must first understand recursion.",
+                    "Linux is user friendly. It's just picky about who its friends are.",
+                    "Have you tried turning it off and on again? (type `reboot`)",
+                    "rm -rf / is not a personality.",
+                    "Real programmers count from 0.",
+                    "Your distro is fine. Stop distro hopping. (you won't.)",
+                    "The quieter you become, the more you are able to hear the fans spinning."
+                ];
+                print(f[Math.floor(Math.random() * f.length)]);
+            },
+
+            reboot() {
+                busy = true;
+                print("[yellow]Broadcast message from root@valerie.wtf: The system will reboot now![/]");
+                setTimeout(() => rebootSequence(
+                    ["Stopped User Manager", "Unmounted /home", "Reached target System Reboot", "Started Journal Service", "Started Network Manager", "Reached target Graphical Interface"],
+                    ["[dim]rebooted. everything's exactly where you left it. that's kind of the point 😌[/]\n"]
+                ), 900);
+            },
+
+            shutdown() { powerOff(); },
+            poweroff() { powerOff(); }
         };
 
         // ---------- quiz ----------
@@ -741,12 +815,28 @@
                 print(`💡 changing the system needs admin rights. try: \`${canon(r.mgr, r.task, r.pkg)}\``);
                 return;
             }
+            if (r.task === "install" && /^(windows|windows ?1[01]|win1[01]|macos|osx)$/i.test(r.pkg)) {
+                print(r.mgr === "apt" ? `[red]E: Unable to locate package ${r.pkg}[/]` : `[red]error: target not found: ${r.pkg}[/]`);
+                print("and honestly? good. you're free now 🐧");
+                return;
+            }
             if (r.mgr === "snap" && distroKey === "mint") {
                 print("[red]error: snap: command not found[/]");
                 print("💡 Linux Mint blocks Snap by default (see /etc/apt/preferences.d/nosnap.pref). use flatpak instead, it's built into Mint's Software Manager!");
                 return;
             }
             fakeOutput(r.mgr, r.task, r.pkg).forEach(l => print(l));
+            if ((r.mgr === "pacman" || r.mgr === "yay") && r.task === "upgrade" && Math.random() < 0.2) {
+                const doom = [
+                    ["(42/69) upgrading nvidia-dkms", "[red]==> ERROR: module nvidia failed to build. enjoy your black screen 🖤[/]"],
+                    ["[red]error: failed to commit transaction (conflicting files)[/]", "[red]python-pip: /usr/lib/python3.12/site-packages/pip exists in filesystem[/]"],
+                    ["(13/13) upgrading linux", "[red]==> ERROR: failed to build initramfs. good luck rebooting 🙂[/]"],
+                    ["[red]error: archlinux-keyring: signature from \"Some Dev <dev@archlinux.org>\" is marginal trust[/]", "[red]error: failed to commit transaction (invalid or corrupted package (PGP signature))[/]"]
+                ];
+                doom[Math.floor(Math.random() * doom.length)].forEach(l => print(l));
+                print("[dim](just a meme 😭 Arch updates are usually fine. check archlinux.org/news before big ones tho!)[/]");
+                return;
+            }
             print(`\n[dim]📘 ${m.name}: this would ${TASKS[r.task]}${r.pkg ? ` (${r.pkg})` : ""}.[/]`);
             if (m.notes[r.task]) print(`💡 ${m.notes[r.task]}`);
             if (!curMgr) print(`[dim]tip: \`use <distro>\` and I'll warn you if you use the wrong package manager.[/]`);
@@ -758,6 +848,26 @@
             histIdx = history.length;
 
             if (quiz) { answerQuiz(line); return; }
+
+            if (/^\s*sudo\s/.test(line) && !lectured) {
+                lectured = true;
+                print("[dim]We trust you have received the usual lecture from the local System\nAdministrator. It usually boils down to these three things:\n\n    #1) Respect the privacy of others.\n    #2) Think before you type.\n    #3) With great power comes great responsibility.\n\n[sudo] password for you: ********[/]");
+            }
+
+            const flat = line.trim().replace(/\s+/g, " ").toLowerCase();
+            if (/^:\(\) ?\{ ?:\|: ?& ?\} ?; ?:$/.test(flat)) { forkBomb(); return; }
+            if (/^(sudo )?apt(-get)? moo$/.test(flat)) {
+                print("                 (__)\n                 (oo)\n           /------\\/\n          / |    ||\n         *  /\\---/\\\n            ~~   ~~\n...\"Have you mooed today?\"...");
+                print("[dim](this is a real apt easter egg btw 🐄)[/]");
+                return;
+            }
+            if (flat === "make me a sandwich") { print("What? Make it yourself."); return; }
+            if (flat === "sudo make me a sandwich") { print("Okay. 🥪"); return; }
+            if (/^i use arch( btw)?!*$/.test(flat) || flat === "btw") {
+                const archy = distroKey && DISTROS[distroKey].mgr === "pacman";
+                print(archy ? "we KNOW. you've told us 47 times this week 🙄" : `no you don't, you're on ${distroKey ? DISTROS[distroKey].name : "a website"} 🤨 (\`use arch\` if you want bragging rights)`);
+                return;
+            }
 
             const [name, ...args] = line.trim().split(/\s+/);
             if (!name) return;
@@ -794,6 +904,12 @@
 
         input.addEventListener("keydown", e => {
             if (busy) { e.preventDefault(); return; }
+            if (vim) {
+                if (e.key === "Escape") { vim.msg = "[dim]you pressed Esc. you're in normal mode now. still in vim tho 🙂[/]"; renderVim(); return; }
+                if (e.key === "c" && e.ctrlKey) { e.preventDefault(); vim.msg = "Type  :qa!  and press <Enter> to abandon all changes and exit Vim"; renderVim(); return; }
+                if (e.key === "Enter") { vimInput(input.value); input.value = ""; updatePrompt(); scrollDown(); }
+                return;
+            }
             if (e.key === "Enter") {
                 const v = input.value;
                 input.value = "";
@@ -822,7 +938,7 @@
         screen.addEventListener("click", () => { if (!window.getSelection().toString()) input.focus(); });
 
         document.querySelectorAll(".chips button").forEach(b => b.addEventListener("click", () => {
-            if (busy) return;
+            if (busy || vim) return;
             run(b.dataset.cmd);
             updatePrompt();
             scrollDown();
@@ -894,17 +1010,24 @@
                 window.addEventListener("keydown", go);
                 window.addEventListener("pointerdown", go);
             });
-            await reboot();
+            await rebootSequence(
+                ["Booted from rescue USB", "Restoring / from backup (phew)", "Reinstalling literally everything", "Mounting /home (your memes survived)", "Started Network Manager", "Reached target Graphical Interface"],
+                [
+                    "[yellow]💀 you deleted your entire system. luckily this is a website.[/]",
+                    "[dim]fun fact: real `rm` refuses `-rf /` without --no-preserve-root, but `rm -rf /*` has no failsafe at all. never run either![/]\n"
+                ]
+            );
         }
 
-        async function reboot() {
+        async function rebootSequence(units, after) {
+            busy = true;
             out.innerHTML = "";
             win.classList.remove("dead");
-            for (const l of ["[dim]valerie.wtf BIOS v1.0 — POST OK[/]", "[dim]Booting from rescue USB...[/]", "", "Loading Linux 6.11.0-wtf ...", "Loading initial ramdisk ..."]) {
+            for (const l of ["[dim]valerie.wtf BIOS v1.0 — POST OK[/]", "", "Loading Linux 6.11.0-wtf ...", "Loading initial ramdisk ..."]) {
                 print(l);
                 await sleep(350);
             }
-            for (const unit of ["Restoring / from backup (phew)", "Reinstalling literally everything", "Mounting /home (your memes survived)", "Starting Journal Service", "Started Network Manager", "Reached target Graphical Interface"]) {
+            for (const unit of units) {
                 print(` [ [green]  OK  [/] ] ${unit}.`);
                 scrollDown();
                 await sleep(300);
@@ -912,12 +1035,215 @@
             await sleep(600);
             out.innerHTML = "";
             boot();
-            print("[yellow]💀 you deleted your entire system. luckily this is a website.[/]");
-            print("[dim]fun fact: real `rm` refuses `-rf /` without --no-preserve-root, but `rm -rf /*` has no failsafe at all. never run either![/]\n");
+            after.forEach(l => print(l));
             busy = false;
             updatePrompt();
             scrollDown();
             input.focus();
+        }
+
+        async function powerOff() {
+            busy = true;
+            win.classList.add("dead");
+            out.innerHTML = "";
+            for (const l of ["[  OK  ] Stopped target Graphical Interface.", "[  OK  ] Unmounted /home.", "[  OK  ] Reached target Power-Off.", "Power down."]) {
+                print("", l);
+                await sleep(400);
+            }
+            await sleep(1800);
+            print("", "\n...jk. websites can't turn off 🙂");
+            await sleep(1500);
+            await rebootSequence(["Started Journal Service", "Started Network Manager", "Reached target Graphical Interface"], ["[dim]back already. you can just close the tab, you know 🙂[/]\n"]);
+        }
+
+        // ---------- :(){ :|:& };: ----------
+
+        async function forkBomb() {
+            busy = true;
+            input.blur();
+            const bombs = [];
+            for (let n = 1; n <= 128; n *= 2) {
+                while (bombs.length < n) {
+                    const b = document.createElement("div");
+                    b.className = "bomb";
+                    b.textContent = ":(){ :|:& };:\n:(){ :|:& };:\n:(){ :|:& };:";
+                    b.style.left = Math.random() * Math.max(0, innerWidth - 220) + "px";
+                    b.style.top = Math.random() * Math.max(0, innerHeight - 100) + "px";
+                    document.body.appendChild(b);
+                    bombs.push(b);
+                }
+                if (n >= 16) print("[red]bash: fork: retry: Resource temporarily unavailable[/]");
+                scrollDown();
+                await sleep(n < 8 ? 450 : 250);
+            }
+            win.classList.add("glitch");
+            for (let i = 0; i < 6; i++) { print("[red]bash: fork: Resource temporarily unavailable[/]"); scrollDown(); await sleep(150); }
+            await sleep(900);
+            bombs.forEach(b => b.remove());
+            win.classList.remove("glitch");
+            const t = (performance.now() / 1000).toFixed(6);
+            print(`[yellow][${t}] Out of memory: Killed process 1337 (bash) total-vm:∞kB, anon-rss:all of it[/]`);
+            print("\n💣 that was a [bold]fork bomb[/]: a function that calls itself twice, forever, until the system runs out of processes.");
+            print("[dim]the OOM killer saved you this time. never paste random commands from the internet!![/]");
+            busy = false;
+            updatePrompt();
+            scrollDown();
+            input.focus();
+        }
+
+        // ---------- sl ----------
+
+        function train() {
+            busy = true;
+            const t = document.createElement("div");
+            t.className = "train";
+            t.textContent = [
+                "                        (  ) (@@) ( )  (@)  ()    @@    O     @     O     @",
+                "                   (@@@)",
+                "               (    )",
+                "            (@@@@)",
+                "          (   )",
+                "      ====        ________                ___________",
+                "  _D _|  |_______/        \\__I_I_____===__|_________|",
+                "   |(_)---  |   H\\________/ |   |        =|___ ___|      _________________",
+                "   /     |  |   H  |  |     |   |         ||_| |_||     _|                \\_____A",
+                "  |      |  |   H  |__--------------------| [___] |   =|                        |",
+                "  | ________|___H__/__|_____/[][]~\\_______|       |   -|                        |",
+                "  |/ |   |-----------I_____I [][] []  D   |=======|____|________________________|_",
+                "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__|__________________________|_",
+                " |/-=|___|=    ||    ||    ||    |_____/~\\___/          |_D__D__D_|  |_D__D__D_|",
+                "  \\_/      \\O=====O=====O=====O_/      \\_/               \\_/   \\_/    \\_/   \\_/"
+            ].join("\n");
+            document.body.appendChild(t);
+            t.addEventListener("animationend", () => {
+                t.remove();
+                print("🚂 choo choo! [dim]you probably meant `ls`. `sl` (steam locomotive) is a real prank package that punishes typos: `sudo apt install sl`[/]");
+                busy = false;
+                updatePrompt();
+                scrollDown();
+                input.focus();
+            });
+        }
+
+        // ---------- cmatrix ----------
+
+        function matrix() {
+            busy = true;
+            input.blur();
+            const c = document.createElement("canvas");
+            c.className = "overlay";
+            c.width = innerWidth;
+            c.height = innerHeight;
+            document.body.appendChild(c);
+            const ctx = c.getContext("2d");
+            const size = 16;
+            const drops = Array(Math.ceil(c.width / size)).fill(0).map(() => Math.random() * -50);
+            const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF$#@%&";
+            ctx.font = `${size}px monospace`;
+            const tick = setInterval(() => {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+                ctx.fillRect(0, 0, c.width, c.height);
+                ctx.fillStyle = "#4ae24a";
+                drops.forEach((y, i) => {
+                    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * size, y * size);
+                    drops[i] = y * size > c.height && Math.random() > 0.97 ? 0 : y + 1;
+                });
+            }, 50);
+            let done = false;
+            const stop = () => {
+                if (done) return;
+                done = true;
+                clearInterval(tick);
+                c.remove();
+                removeEventListener("keydown", stop);
+                removeEventListener("pointerdown", stop);
+                print("[green]wake up, neo...[/] [dim](the real one: `sudo apt install cmatrix`)[/]");
+                busy = false;
+                updatePrompt();
+                scrollDown();
+                input.focus();
+            };
+            setTimeout(() => {
+                addEventListener("keydown", stop);
+                addEventListener("pointerdown", stop);
+            }, 300);
+            setTimeout(stop, 8000);
+        }
+
+        // ---------- vim (good luck) ----------
+
+        let vim = null;
+        let lectured = false;
+
+        const VIM_HINTS = [
+            "-- INSERT -- [dim](you're typing into the file now 😳)[/]",
+            "[dim]hint: vim commands start with a colon, like :q[/]",
+            "[dim]hint: :q! quits without saving[/]",
+            null,
+            "[yellow]people have been trapped in vim since 1991. type :q! and press Enter. please.[/]"
+        ];
+
+        function openVim(file) {
+            vim = { file, lines: [], saved: out.innerHTML, msg: file ? `"${file}" [New]` : "", dirty: false, tries: 0, start: Date.now() };
+            renderVim();
+        }
+
+        function renderVim() {
+            out.innerHTML = "";
+            const rows = Math.max(8, Math.floor(screen.clientHeight / 23) - 2);
+            const intro = ["VIM - Vi IMproved", "", "version 9.1.0", "by Bram Moolenaar et al.", "Vim is open source and freely distributable", "", "type  :q<Enter>               to exit", "type  :help<Enter>  or  <F1>  for on-line help"];
+            const introAt = Math.floor((rows - intro.length) / 2);
+            for (let i = 0; i < rows; i++) {
+                if (i < vim.lines.length) print("", vim.lines[i]);
+                else if (!vim.lines.length && i >= introAt && i < introAt + intro.length) {
+                    // the empty-buffer splash: tilde on the left, text centred over the row
+                    print("[blue]~[/]").innerHTML += `<span class="vim-intro">${esc(intro[i - introAt])}</span>`;
+                } else print("[blue]~[/]");
+            }
+            print(vim.msg || " ");
+        }
+
+        function closeVim(note) {
+            const secs = Math.round((Date.now() - vim.start) / 1000);
+            out.innerHTML = vim.saved;
+            vim = null;
+            print(`[green]you escaped vim in ${secs}s.[/] ${note}`);
+            print("[dim]cheatsheet: :q quit · :q! quit without saving · :wq save and quit · i to type · Esc to stop typing[/]");
+        }
+
+        function vimInput(line) {
+            const cmd = line.trim();
+            if (cmd === "ZZ") { vimInput(":x"); return; }
+            if (!cmd.startsWith(":")) {
+                if (line) { vim.lines.push(line); vim.dirty = true; }
+                vim.tries++;
+                vim.msg = VIM_HINTS[Math.min(vim.tries, VIM_HINTS.length) - 1] || `[dim]you've been in vim for ${Math.round((Date.now() - vim.start) / 1000)}s. this is how it starts 💀[/]`;
+                renderVim();
+                return;
+            }
+            const [c, arg] = cmd.slice(1).split(/\s+/);
+            if (["q", "quit"].includes(c)) {
+                if (vim.dirty) vim.msg = "[red]E37: No write since last change (add ! to override)[/]";
+                else { closeVim(vim.tries ? "put it on your resume 📄" : "first try?? who ARE you 😳"); return; }
+            } else if (["q!", "qa!", "quit!", "cq"].includes(c)) {
+                closeVim("put it on your resume 📄");
+                return;
+            } else if (["w", "write"].includes(c) || ["wq", "x", "wq!", "x!"].includes(c)) {
+                if (arg) vim.file = arg;
+                if (!vim.file) vim.msg = "[red]E32: No file name[/]";
+                else if (c === "w" || c === "write") {
+                    vim.dirty = false;
+                    vim.msg = `"${vim.file}" ${vim.lines.length}L written`;
+                } else {
+                    closeVim(`and you saved ${vim.file}! a natural 💅`);
+                    return;
+                }
+            } else if (c === "help" || c === "h") {
+                vim.msg = "[dim]lol. lmao even. the help is: type :q! and press Enter[/]";
+            } else {
+                vim.msg = `[red]E492: Not an editor command: ${cmd.slice(1)}[/]`;
+            }
+            renderVim();
         }
 
         // ---------- boot ----------
