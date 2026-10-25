@@ -1,63 +1,70 @@
 # valerie.wtf
 
-Sudo is a tiny pixel penguin who lives at valerie.wtf. Hatch his egg, then look after him: drag fish to him, scrub him with soap, take him fishing, dress him up, clean up after him, and don't let him get sick 🐧
+Tiny pixel pets live here. Pick one, hatch their egg, and look after them: feed them, bathe them, play with them, dress them up, clean up after them, and don't let them get sick.
 
 **Live at [valerie.wtf](https://valerie.wtf)**
+
+## The pets
+
+| | Pet | Lives | Loves | Their thing |
+| --- | --- | --- | --- | --- |
+| 🐧 | **[Sudo](https://valerie.wtf/sudo/)** the penguin | on the ice next to his igloo | fish 🐟, his ball | Go **fishing** for fish, junk and a rare golden fish |
+| 🪿 | **[Puck](https://valerie.wtf/puck/)** the goose | by the pond in the park | lettuce 🥬, his bell 🔔 | Help him **raid a picnic**: wait for them to look away, then snatch |
+
+The home page shows a card for each pet with how they're doing right now, so you can see who needs you.
 
 ## Growing up
 
 1. 🥚 **Egg.** Tap the egg to keep it warm. It cools off over time, and it only grows while it's warm (it shivers and turns blue when it's cold). After about 2½ warm hours it cracks open
-2. 🐣 **Baby.** A fluffy grey chick for his first 3 days
-3. 🐧 **Grown-up.** A big Tux-ish penguin with his own little curl of a tuft
+2. 🐣 **Baby.** A fluffy chick (Sudo) or a yellow gosling (Puck) for the first 3 days
+3. 🐧🪿 **Grown-up.** Sudo is a Tux-ish penguin with a little curl of a tuft. Puck is a white goose with a permanently suspicious eyebrow
 
-## Looking after Sudo
+## Looking after them
 
-Drag an item from the tray onto Sudo, or just tap it and it flies over to him:
+Drag an item from the tray onto your pet, or just tap it and it flies over:
 
-| Item | What it does |
-| --- | --- |
-| 🐟 Fish | Feeds him. Feed him when he's already full and he gets a tummy ache 🤢 |
-| 🧼 Soap | Bath time. Scrub him with it and bubbles come off |
-| 🎾 Ball | Play. Makes him happy, but uses up energy and food |
-| 💊 Meds | Only does anything when he's sick |
-| 🎣 Fish! | Go fishing (see below) |
-| 🌙 Sleep | Puts him to bed, or wakes him up (he's grumpy about it). He won't go to bed if he isn't tired |
+| Sudo | Puck | What it does |
+| --- | --- | --- |
+| 🐟 Fish | 🥬 Lettuce | Feeds them. Feed them when they're full and they get a tummy ache 🤢 |
+| 🧼 Soap | 💦 Splash | Bath time. Scrub them with it and bubbles come off |
+| 🎾 Ball | 🔔 Bell | Play. Makes them happy, but uses up energy and food |
+| 💊 Meds | 💊 Meds | Only does anything when they're sick |
+| 🎣 Fish! | 🧺 Snatch! | Their minigame |
+| 🌙 Sleep | 🌙 Sleep | Puts them to bed, or wakes them up (they're grumpy about it) |
 
-Tap Sudo himself to pet him 🥰
+Tap your pet to pet them 🥰
 
-His food, fun, cleanliness and energy go down over time, even while the tab is closed, so come back and check on him. A full tummy lasts about half a day. If he's left hungry or stinky for too long he gets sick 🤒. The **Diary** button shows everything that's happened to him, plus everything you've caught.
+Their food, fun, cleanliness and energy go down over time, even while the tab is closed, so come back and check on them. A full tummy lasts about half a day. Left hungry or dirty for too long, they get sick 🤒. A few minutes after eating, they poop 💩: tap it to clean it up, because poop lying around makes them dirty and a lot of it makes them ill.
 
-A few minutes after he eats, he poops 💩. Tap it to clean it up. Poop left lying around makes him dirty, and a lot of it makes him ill.
+**Minigames.** Both work the same way: start, wait for the moment, then tap fast. Too early and it's ruined, too late and it's gone. Food they win gets eaten if they're hungry. Each game has a rare prize that unlocks an accessory (Sudo's golden fish unlocks a fish hat, Puck's stolen sun hat unlocks the sun hat), and the odds go up if you've been unlucky for a while.
 
-### Fishing 🎣
+**Wardrobe.** Sudo has 12 accessories and Puck has 10, each in a baby size and a grown-up size. They can wear one hat, one pair of shades and one neck thing at once. The crown unlocks when they grow up.
 
-Tap **Fish!**, cast your line, wait for the bobber to dip, then reel in fast. Too early and you scare the fish off, too late and it gets away. You might catch a fish or a big fish (Sudo eats them if he's hungry), an old boot, seaweed, an ice cube, or, very rarely, a **golden fish**, which unlocks the fish hat.
-
-### Wardrobe 🎩
-
-Twelve accessories, each in a baby size and a grown-up size: a top hat, beanie, bow, party hat, flower crown, headphones, shades, heart shades, scarf and bow tie, plus a crown (unlocks when he grows up) and a fish hat (catch a golden fish). He can wear one hat, one pair of shades and one neck thing at once.
-
-### His world
-
-He lives on the ice outside his igloo, next to a fishing hole and a snowman, with mountains behind him and other penguins waddling past now and then. The sky follows your clock: dawn, day, dusk, and night with stars, shooting stars, an aurora, and a glowing igloo door. It's always night while he sleeps.
+**Their worlds** follow your clock: dawn, day, dusk, and night with stars and shooting stars. It's always night while they sleep. Sudo has an aurora, falling snow, a snowman and penguins waddling past. Puck has fireflies, falling leaves, a lamp post, a bench, the picnic he keeps robbing, and ducks paddling across the pond with their ducklings.
 
 Every action has a little chiptune sound. The ♪ button turns them off. There are a few secrets too 👀
 
-For now Sudo lives in your browser (`localStorage`), so everyone has their own Sudo. A shared version where everyone raises one Sudo together is the plan for later.
+Each pet lives in your browser (`localStorage`), so everyone has their own.
 
 ### Debug mode 🐞
 
-Add `#debug` to the address ([valerie.wtf/#debug](https://valerie.wtf/#debug)) and a **Debug** button appears. It can switch stages, skip time, set any stat, trigger moods and animations, make him poop, rig the next catch to be golden, make fish bite instantly, send a shooting star or a passing penguin, change the sky, unlock every accessory, turn snow off, and reset Sudo back to an egg. It changes your real saved Sudo.
+Add `#debug` to a pet's address ([valerie.wtf/sudo/#debug](https://valerie.wtf/sudo/#debug), [valerie.wtf/puck/#debug](https://valerie.wtf/puck/#debug)) and a **Debug** button appears. It can switch stages, skip time, set any stat, trigger moods and animations, make them poop, rig the minigame's rare prize, make the minigame instant, send a shooting star or passers-by, change the sky, unlock every accessory, turn the weather off, and reset back to an egg. It changes your real saved pet.
 
 ## How it's built
 
-It's a single HTML file with plain HTML, CSS and JavaScript: no frameworks, no build step, no dependencies. It's hosted on GitHub Pages with the custom domain set in `CNAME`.
+Plain HTML, CSS and JavaScript: no frameworks, no build step, no dependencies. Hosted on GitHub Pages with the custom domain set in `CNAME`.
 
-- `index.html`: Sudo. The world behind him is drawn on a canvas whose pixels line up with his
-- `sprites/`: the 32×32 pixel-art sprites (`baby_*` for baby Sudo, `egg_*` and `hatch_*` for the egg, `acc_*` for accessories) and the 16×16 items. They're drawn by `tools/make_sprites.py` (needs Pillow: `python3 tools/make_sprites.py sprites preview.png`), so a new sprite is a few lines of Python
+- `index.html`: the home page with a card for each pet
+- `shared/core.js`: the rules every pet follows (stats, the egg, growing up, moods). No page code, so the home page can use it too
+- `shared/pet.js` and `shared/pet.css`: the pet engine that builds each pet's page: care, dragging, the wardrobe, the minigame, the world, sounds and debug mode
+- `sudo/` and `puck/`: each pet's page plus its `config.js`, which holds everything that makes that pet different: their text, items, accessories, minigame, and how to draw their world
+- `sprites/sudo/`, `sprites/puck/`: 32×32 pixel-art sprites (`baby_*` for the baby, `egg_*` and `hatch_*` for the egg, `acc_*` for accessories) and 16×16 items
+- `tools/`: the Python that draws every sprite (`pixels.py` has the shared bits, `sudo.py` and `puck.py` draw each pet). Run `python3 tools/make_sprites.py` (needs Pillow), or `python3 tools/make_sprites.py some/folder` to also get a preview sheet of each pet
 - `archive/`: older versions of the site. valerie.wtf used to be a terminal for learning Linux package managers (`terminal-v1.html`, `terminal-v2.html`) with a typing game called Package Panic (`package-panic-v1.html`)
 
-To run it locally, open `index.html` in a browser.
+To add a pet: draw them in `tools/`, give them a folder with an `index.html` and a `config.js` (copy one of the existing pets), and add their config to the home page's script list.
+
+To run it locally, serve the folder (for example `python3 -m http.server`) and open it in a browser.
 
 ## Contact
 
