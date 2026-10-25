@@ -6,29 +6,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
     <title>Sudo the Penguin</title>
-    <meta name="description" content="Sudo is a tiny pixel penguin who lives at valerie.wtf. Drag fish to him, give him baths, play ball, and don't let him get sick.">
+    <meta name="description" content="Sudo is a tiny pixel penguin who lives at valerie.wtf. Hatch his egg, feed him fish, give him baths, dress him up, and watch him grow up.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=VT323&display=swap">
 
     <style>
-        /* one-screen handheld: status HUD on top, Sudo on the ice in the middle, item tray at the bottom */
+        /* one-screen handheld over a pixel-art Antarctic world: HUD on top, Sudo on the ice, item tray at the bottom */
         :root {
-            --sky-hi: #1b2246;
-            --sky-lo: #4f6fae;
-            --ice: #e3f0fd;
-            --ice-edge: #a8c3e6;
+            --sky: #1b2246;
             --ink: #1a1c2c;
-            --panel: #141a35;
+            --panel: rgba(20, 26, 53, 0.92);
+            --panel-solid: #141a35;
             --panel-line: #2f3a68;
             --text: #eef3ff;
             --muted: #a3b3da;
+            --paper: #e3f0fd;
             --beak: #f7963c;
             --good: #7bd88f;
             --warn: #f2c14e;
             --bad: #ef5b6b;
-            --night: rgba(8, 10, 30, 0.55);
 
             --display: "Pixelify Sans", "Trebuchet MS", system-ui, sans-serif;
             --mono: "VT323", ui-monospace, "DejaVu Sans Mono", monospace;
@@ -44,15 +42,23 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: linear-gradient(180deg, var(--sky-hi) 0%, var(--sky-lo) 100%);
-            background-color: var(--sky-hi);
+            background: var(--sky);
             color: var(--text);
             font-family: var(--display);
             font-size: 16px;
             -webkit-tap-highlight-color: transparent;
         }
 
+        #world {
+            position: fixed;
+            z-index: 0;
+            image-rendering: pixelated;
+            pointer-events: none;
+        }
+
         .app {
+            position: relative;
+            z-index: 1;
             height: 100%;
             max-width: 640px;
             margin: 0 auto;
@@ -64,31 +70,34 @@
             padding-right: max(16px, env(safe-area-inset-right, 0px));
         }
 
+        button { font: inherit; color: inherit; }
+        button:focus-visible { outline: 3px dashed var(--beak); outline-offset: 2px; }
+
         /* ---------- header ---------- */
 
-        .top { display: flex; align-items: center; gap: 12px; }
-        .nameplate { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 1; }
-        h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: 0.02em; text-wrap: balance; }
-        .age { font-family: var(--mono); font-size: 20px; color: var(--muted); white-space: nowrap; }
+        .top { display: flex; align-items: center; gap: 10px; }
+        .nameplate { flex: 1; min-width: 0; display: grid; gap: 2px; }
+        .nameline { display: flex; align-items: center; gap: 10px; }
+        h1 { margin: 0; font-size: 30px; line-height: 1; font-weight: 700; letter-spacing: 0.02em; text-shadow: 0 2px 0 var(--ink); }
+        .age { font-family: var(--mono); font-size: 19px; line-height: 1; color: var(--text); text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
 
         .mood {
-            font-size: 14px;
-            padding: 4px 10px;
+            font-size: 13px;
+            padding: 3px 8px;
             border: 2px solid var(--panel-line);
-            background: var(--panel);
+            background: var(--panel-solid);
             white-space: nowrap;
         }
         .mood[data-level="bad"] { border-color: var(--bad); color: var(--bad); }
         .mood[data-level="warn"] { border-color: var(--warn); color: var(--warn); }
         .mood[data-level="good"] { border-color: var(--good); color: var(--good); }
 
+        .buttons { display: flex; gap: 6px; }
         .icon-btn {
-            font: inherit;
             font-size: 14px;
-            color: var(--text);
-            background: var(--panel);
+            background: var(--panel-solid);
             border: 2px solid var(--panel-line);
-            padding: 4px 10px;
+            padding: 5px 10px;
             cursor: pointer;
         }
         .icon-btn:hover { border-color: var(--muted); }
@@ -97,7 +106,7 @@
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr));
             gap: 8px;
             padding: 10px 12px;
             background: var(--panel);
@@ -121,14 +130,7 @@
             flex-direction: column;
             justify-content: flex-end;
             align-items: center;
-            overflow: hidden;
         }
-
-        .stars { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s; pointer-events: none; }
-        .stars i { position: absolute; width: 3px; height: 3px; background: var(--ice); }
-        .scene.night .stars { opacity: 1; }
-        .scene::after { content: ""; position: absolute; inset: 0; background: var(--night); opacity: 0; transition: opacity 1.2s; pointer-events: none; }
-        .scene.night::after { opacity: 1; }
 
         .say {
             position: relative;
@@ -136,7 +138,7 @@
             max-width: min(100%, 340px);
             margin-bottom: 8px;
             padding: 8px 12px;
-            background: var(--ice);
+            background: var(--paper);
             color: var(--ink);
             border: 3px solid var(--ink);
             font-size: 16px;
@@ -155,42 +157,37 @@
             width: 12px;
             height: 12px;
             margin-left: -6px;
-            background: var(--ice);
+            background: var(--paper);
             border-right: 3px solid var(--ink);
             border-bottom: 3px solid var(--ink);
             transform: rotate(45deg) scaleY(0.8);
         }
 
-        .stage { position: relative; z-index: 1; display: grid; justify-items: center; }
-
-        #sudo {
-            display: block;
+        .sprite-box {
+            position: relative;
+            z-index: 1;
             width: min(72vw, 44vh, 384px);
-            height: auto;
-            aspect-ratio: 1;
             max-width: 100%;
-            image-rendering: pixelated;
-            cursor: pointer;
-            user-select: none;
-            -webkit-user-drag: none;
-            touch-action: manipulation;
-            transition: transform 0.15s;
+            aspect-ratio: 1;
         }
+        .sprite-box img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; user-select: none; -webkit-user-drag: none; }
+        .sprite-box .acc { pointer-events: none; }
+        #sudo { cursor: pointer; touch-action: manipulation; transition: transform 0.15s; }
         #sudo.target { transform: scale(1.06); filter: drop-shadow(0 0 10px var(--beak)); }
         #sudo:focus-visible { outline: 3px dashed var(--beak); outline-offset: 4px; }
 
-        .floor {
-            width: min(100%, 520px);
-            height: 26px;
-            margin-top: -14px;
-            background: var(--ice);
-            border: 3px solid var(--ink);
-            border-radius: 50%;
-            box-shadow: inset 0 -6px 0 var(--ice-edge);
+        .hint {
+            position: relative;
+            z-index: 2;
+            margin: 14px 0 0;
+            padding: 4px 10px;
+            background: var(--panel);
+            border: 2px solid var(--panel-line);
+            font-size: 14px;
+            color: var(--text);
+            text-align: center;
+            text-wrap: balance;
         }
-
-        .hint { position: relative; z-index: 2; margin: 10px 0 0; font-size: 14px; color: var(--muted); text-align: center; min-height: 1.3em; text-wrap: balance; }
-        .scene.night .hint { color: var(--text); }
 
         .particle {
             position: absolute;
@@ -215,9 +212,7 @@
         }
 
         .item {
-            font: inherit;
             font-size: 14px;
-            color: var(--text);
             display: grid;
             justify-items: center;
             gap: 2px;
@@ -228,13 +223,14 @@
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
+            transition: opacity 0.3s;
         }
         .item img { width: 48px; height: 48px; image-rendering: pixelated; pointer-events: none; -webkit-user-drag: none; }
         .item:hover { border-color: var(--muted); }
-        .item:focus-visible { outline: 3px dashed var(--beak); outline-offset: 2px; }
         .item:active { cursor: grabbing; }
         .item.dragging img { opacity: 0.25; }
         .item[aria-pressed="true"] { border-color: var(--warn); }
+        .tray.locked .item { opacity: 0.45; }
 
         .ghost {
             position: fixed;
@@ -248,15 +244,15 @@
         }
         .ghost.fly { transition: left 0.35s ease-in, top 0.35s cubic-bezier(.5, -0.6, .7, 1), opacity 0.35s; }
 
-        /* ---------- diary ---------- */
+        /* ---------- sheets (diary, wardrobe) ---------- */
 
-        .diary {
+        .sheet {
             position: fixed;
             z-index: 30;
             left: 0;
             right: 0;
             bottom: 0;
-            max-height: 70%;
+            max-height: 72%;
             display: grid;
             grid-template-rows: auto 1fr auto;
             gap: 10px;
@@ -266,23 +262,84 @@
             padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
             padding-left: max(16px, env(safe-area-inset-left, 0px));
             padding-right: max(16px, env(safe-area-inset-right, 0px));
-            background: var(--panel);
+            background: var(--panel-solid);
             border: 2px solid var(--panel-line);
             border-bottom: 0;
             box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
         }
-        .diary-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .diary h2 { margin: 0; font-size: 22px; }
+        .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .sheet h2 { margin: 0; font-size: 22px; }
+        .sheet .foot { font-size: 14px; color: var(--muted); }
+        .sheet a { color: var(--paper); }
+
         .diary ol { margin: 0; padding: 0; list-style: none; overflow-y: auto; display: grid; gap: 2px; align-content: start; }
         .diary li { display: flex; gap: 12px; font-size: 15px; }
         .diary time { font-family: var(--mono); font-size: 18px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-        .diary .counts { font-size: 14px; color: var(--muted); }
-        .diary a { color: var(--ice); }
+
+        .closet { overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; align-content: start; }
+        .acc-tile {
+            display: grid;
+            justify-items: center;
+            gap: 4px;
+            padding: 8px 6px;
+            background: #1d2449;
+            border: 2px solid var(--panel-line);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .acc-tile:hover { border-color: var(--muted); }
+        .acc-tile[aria-pressed="true"] { border-color: var(--good); background: #1f3a3a; }
+        .acc-tile[aria-disabled="true"] { cursor: not-allowed; opacity: 0.55; }
+        .acc-tile .mini { position: relative; width: 64px; height: 64px; }
+        .acc-tile .mini img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+        .acc-tile small { font-size: 11px; color: var(--muted); text-align: center; }
+        .closet .empty { grid-column: 1 / -1; color: var(--muted); }
+
+        /* ---------- debug ---------- */
+
+        .debug {
+            position: fixed;
+            z-index: 40;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: min(360px, 100%);
+            overflow-y: auto;
+            display: grid;
+            gap: 14px;
+            align-content: start;
+            padding-top: max(14px, env(safe-area-inset-top, 0px));
+            padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+            padding-left: 16px;
+            padding-right: max(16px, env(safe-area-inset-right, 0px));
+            background: var(--panel-solid);
+            border-left: 2px solid var(--warn);
+            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+            font-size: 14px;
+        }
+        .debug h2 { margin: 0; font-size: 20px; color: var(--warn); }
+        .debug h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+        .debug .row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .debug .row button {
+            font-size: 13px;
+            padding: 4px 8px;
+            background: #1d2449;
+            border: 2px solid var(--panel-line);
+            cursor: pointer;
+        }
+        .debug .row button:hover { border-color: var(--warn); }
+        .debug .row button[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); }
+        .debug .slider { display: grid; grid-template-columns: 72px 1fr 34px; align-items: center; gap: 8px; }
+        .debug .slider span:last-child { font-family: var(--mono); font-size: 18px; text-align: right; font-variant-numeric: tabular-nums; }
+        .debug input[type="range"] { width: 100%; accent-color: var(--warn); }
+        .debug .note { color: var(--muted); margin: 0; }
+        .debug .danger { border-color: var(--bad) !important; color: var(--bad); }
 
         @media (max-width: 480px) {
             .app { gap: 10px; padding-block: 10px; }
             h1 { font-size: 24px; }
-            .age { font-size: 17px; }
+            .age { font-size: 16px; }
+            .icon-btn { font-size: 13px; padding: 4px 7px; }
             .stats { gap: 6px; padding: 8px; }
             .stat-head { flex-direction: column; gap: 2px; font-size: 10px; letter-spacing: 0.04em; }
             .stat-head b { font-size: 16px; line-height: 1; }
@@ -300,29 +357,38 @@
 
 <body>
 
+    <canvas id="world" aria-hidden="true"></canvas>
+
     <main class="app">
         <header class="top">
             <div class="nameplate">
-                <h1>Sudo</h1>
+                <div class="nameline">
+                    <h1>Sudo</h1>
+                    <span class="mood" id="mood"></span>
+                </div>
                 <span class="age" id="age"></span>
             </div>
-            <span class="mood" id="mood"></span>
-            <button class="icon-btn" id="diaryBtn" type="button">Diary</button>
+            <div class="buttons">
+                <button class="icon-btn" id="debugBtn" type="button" hidden>Debug</button>
+                <button class="icon-btn" id="closetBtn" type="button">Wardrobe</button>
+                <button class="icon-btn" id="diaryBtn" type="button">Diary</button>
+            </div>
         </header>
 
         <section class="stats" id="stats" aria-label="Sudo's stats"></section>
 
         <section class="scene" id="scene">
-            <div class="stars" id="stars"></div>
             <div class="say" id="say" role="status" aria-live="polite"></div>
-            <div class="stage">
-                <img id="sudo" src="sprites/idle_happy_1.png" alt="Sudo the penguin. Tap to pet him." tabindex="0" draggable="false">
-                <div class="floor"></div>
+            <div class="sprite-box" id="spriteBox">
+                <img id="sudo" src="sprites/egg_0_1.png" alt="Sudo's egg. Tap to keep it warm." tabindex="0" draggable="false">
+                <img class="acc" id="acc-neck" alt="" hidden>
+                <img class="acc" id="acc-face" alt="" hidden>
+                <img class="acc" id="acc-head" alt="" hidden>
             </div>
             <p class="hint" id="hint"></p>
         </section>
 
-        <nav class="tray" aria-label="Things to give Sudo">
+        <nav class="tray" id="tray" aria-label="Things to give Sudo">
             <button class="item" type="button" data-item="fish"><img src="sprites/fish.png" alt="">Fish</button>
             <button class="item" type="button" data-item="soap"><img src="sprites/soap.png" alt="">Soap</button>
             <button class="item" type="button" data-item="ball"><img src="sprites/ball.png" alt="">Ball</button>
@@ -331,13 +397,98 @@
         </nav>
     </main>
 
-    <aside class="diary" id="diary" hidden aria-label="Sudo's diary">
-        <div class="diary-head">
+    <aside class="sheet diary" id="diary" hidden aria-label="Sudo's diary">
+        <div class="sheet-head">
             <h2>Sudo's diary</h2>
-            <button class="icon-btn" id="diaryClose" type="button">Close</button>
+            <button class="icon-btn" type="button" data-close="diary">Close</button>
         </div>
         <ol id="log"></ol>
-        <div class="counts" id="counts"></div>
+        <div class="foot" id="counts"></div>
+    </aside>
+
+    <aside class="sheet" id="closet" hidden aria-label="Sudo's wardrobe">
+        <div class="sheet-head">
+            <h2>Wardrobe</h2>
+            <button class="icon-btn" type="button" data-close="closet">Close</button>
+        </div>
+        <div class="closet" id="closetGrid"></div>
+        <div class="foot">Tap something to put it on him. He can wear one hat, one pair of shades and one scarf at a time.</div>
+    </aside>
+
+    <aside class="debug" id="debug" hidden aria-label="Debug tools">
+        <div class="sheet-head">
+            <h2>Debug</h2>
+            <button class="icon-btn" type="button" data-close="debug">Close</button>
+        </div>
+        <p class="note">Everything here changes your real saved Sudo.</p>
+        <section>
+            <h3>Stage</h3>
+            <div class="row" id="dbgStage">
+                <button type="button" data-stage="egg">Egg</button>
+                <button type="button" data-stage="baby">Baby</button>
+                <button type="button" data-stage="adult">Grown-up</button>
+            </div>
+        </section>
+        <section>
+            <h3>Skip time</h3>
+            <div class="row">
+                <button type="button" data-skip="1">+1 hour</button>
+                <button type="button" data-skip="6">+6 hours</button>
+                <button type="button" data-skip="24">+1 day</button>
+                <button type="button" data-skip="72">+3 days</button>
+            </div>
+        </section>
+        <section>
+            <h3>Stats</h3>
+            <div id="dbgSliders" style="display: grid; gap: 6px;"></div>
+        </section>
+        <section>
+            <h3>Moods</h3>
+            <div class="row">
+                <button type="button" data-mood="hungry">Hungry</button>
+                <button type="button" data-mood="stinky">Stinky</button>
+                <button type="button" data-mood="sick">Sick</button>
+                <button type="button" data-mood="sleepy">Sleepy</button>
+                <button type="button" data-mood="bored">Bored</button>
+                <button type="button" data-mood="overfed">Overfed</button>
+                <button type="button" data-mood="perfect">Perfect</button>
+                <button type="button" data-mood="cold">Cold egg</button>
+            </div>
+        </section>
+        <section>
+            <h3>Animations</h3>
+            <div class="row">
+                <button type="button" data-anim="eat">Eat</button>
+                <button type="button" data-anim="pet">Pet</button>
+                <button type="button" data-anim="bath">Bath</button>
+                <button type="button" data-anim="play">Play</button>
+                <button type="button" data-anim="hatch">Hatch</button>
+                <button type="button" data-anim="grow">Grow up</button>
+            </div>
+        </section>
+        <section>
+            <h3>Sky</h3>
+            <div class="row" id="dbgSky">
+                <button type="button" data-sky="">Real time</button>
+                <button type="button" data-sky="dawn">Dawn</button>
+                <button type="button" data-sky="day">Day</button>
+                <button type="button" data-sky="dusk">Dusk</button>
+                <button type="button" data-sky="night">Night</button>
+            </div>
+        </section>
+        <section>
+            <h3>Extras</h3>
+            <div class="row">
+                <button type="button" id="dbgUnlock" aria-pressed="false">Unlock every accessory</button>
+                <button type="button" id="dbgSnow" aria-pressed="true">Snow</button>
+            </div>
+        </section>
+        <section>
+            <h3>Start over</h3>
+            <div class="row">
+                <button type="button" class="danger" id="dbgReset">Reset Sudo</button>
+            </div>
+        </section>
     </aside>
 
     <script>
@@ -350,21 +501,43 @@
 
         const FRAMES = {
             idle_happy: 2, idle_neutral: 2, idle_hungry: 2, idle_sad: 2, idle_stinky: 2, idle_sleepy: 2,
-            idle_sick: 2, idle_overfed: 2, idle_ecstatic: 2, blink: 1, pet: 2, eat: 3, bath: 2, play: 2, sleep: 2
+            idle_sick: 2, idle_overfed: 2, idle_ecstatic: 2, blink: 1, pet: 2, eat: 3, bath: 2, play: 2, sleep: 2,
+            egg_0: 2, egg_1: 2, egg_2: 2, egg_cold_0: 2, egg_cold_1: 2, egg_cold_2: 2, hatch: 3
         };
-        for (const prefix of ["baby_", ""])
-            for (const [name, n] of Object.entries(FRAMES))
+
+        const SLOTS = ["neck", "face", "head"];
+        const ACCESSORIES = [
+            { id: "tophat", name: "Top hat", slot: "head" },
+            { id: "beanie", name: "Beanie", slot: "head" },
+            { id: "bow", name: "Bow", slot: "head" },
+            { id: "crown", name: "Crown", slot: "head", locked: "Unlocks when he grows up" },
+            { id: "shades", name: "Shades", slot: "face" },
+            { id: "scarf", name: "Scarf", slot: "neck" }
+        ];
+
+        // egg and hatching sprites are shared; everything else has a baby_ version
+        const prefixFor = name => /^(egg|hatch)/.test(name) ? "" : stage() === "baby" ? "baby_" : "";
+        const spritePath = (name, frame) => `sprites/${prefixFor(name)}${name}_${frame + 1}.png`;
+
+        for (const [name, n] of Object.entries(FRAMES))
+            for (const prefix of /^(egg|hatch)/.test(name) ? [""] : ["", "baby_"])
                 for (let i = 1; i <= n; i++) new Image().src = `sprites/${prefix}${name}_${i}.png`;
 
         // ---------- state ----------
 
         const STATS = { food: "Food", fun: "Fun", clean: "Clean", energy: "Energy", health: "Health" };
+        const EGG_STATS = { warmth: "Warmth", progress: "Hatching" };
 
         // per-hour changes. a full tummy lasts about half a day.
         const DECAY = {
             awake:  { food: -6, fun: -5, clean: -3, energy: -4 },
             asleep: { food: -3, fun: -1, clean: -1, energy: 20 }
         };
+
+        // the egg cools off over a few hours, and hatches after about 2.5 warm hours
+        const EGG_COOLING = 15;
+        const EGG_GROWTH = 40;
+        const EGG_COLD = 30;
 
         const MAX_CATCHUP_H = 24 * 14;
         const GROW_UP_H = 72;   // he's a fluffy baby for his first 3 days
@@ -373,9 +546,10 @@
         function freshPenguin() {
             const now = Date.now();
             return {
-                born: now, last: now, asleep: false, overfedUntil: 0, grown: false,
+                laid: now, born: now, last: now, hatched: false, asleep: false, overfedUntil: 0, grown: false,
+                egg: { warmth: 70, progress: 0 },
                 stats: { food: 70, fun: 70, clean: 90, energy: 80, health: 100 },
-                counts: {}, log: []
+                wearing: {}, counts: {}, log: []
             };
         }
 
@@ -383,11 +557,18 @@
         let isNew = false;
         try { sudo = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) {}
         if (!sudo || !sudo.stats) { sudo = freshPenguin(); isNew = true; }
+        // saves from before the egg existed are already-hatched penguins
+        if (sudo.hatched === undefined) sudo.hatched = true;
+        sudo.egg ||= { warmth: 0, progress: 100 };
+        sudo.wearing ||= {};
 
         let grewUp = false;
+        let justHatched = false;
+        const debug = { sky: "", unlockAll: false, snow: true };
 
         const ageMs = () => Date.now() - sudo.born;
         const isBaby = () => ageMs() < GROW_UP_H * 36e5;
+        const stage = () => !sudo.hatched ? "egg" : isBaby() ? "baby" : "adult";
 
         function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(sudo)); } catch (e) {} }
 
@@ -403,18 +584,33 @@
             while (hours > 0) {
                 const h = Math.min(hours, 0.25);
                 hours -= h;
+                if (!sudo.hatched) {
+                    const e = sudo.egg;
+                    e.warmth = clamp(e.warmth - EGG_COOLING * h);
+                    if (e.warmth >= EGG_COLD) e.progress = Math.min(100, e.progress + EGG_GROWTH * h);
+                    if (e.progress >= 100) hatch(now - hours * 36e5);
+                    continue;
+                }
                 const s = sudo.stats;
                 for (const [k, v] of Object.entries(DECAY[sudo.asleep ? "asleep" : "awake"])) bump(k, v * h);
                 if (s.food < 15 || s.clean < 15) bump("health", -6 * h);
                 else if (s.food > 40 && s.clean > 40) bump("health", 3 * h);
                 if (sudo.asleep && s.energy >= 100) { sudo.asleep = false; logEvent("woke up all on his own ☀️"); }
             }
-            if (!sudo.grown && !isBaby()) {
+            if (sudo.hatched && !sudo.grown && !isBaby()) {
                 sudo.grown = true;
                 grewUp = true;
                 logEvent("grew up into a big penguin! 🐧");
             }
             save();
+        }
+
+        function hatch(at) {
+            sudo.hatched = true;
+            sudo.born = at;
+            sudo.egg.progress = 100;
+            justHatched = true;
+            logEvent("hatched! 🐣");
         }
 
         function logEvent(msg) {
@@ -440,7 +636,11 @@
             idle_neutral:  ["Okay", "", "Drag things onto Sudo, or tap him to pet him."]
         };
 
+        const crackLevel = () => sudo.egg.progress >= 75 ? 2 : sudo.egg.progress >= 40 ? 1 : 0;
+        const eggCold = () => sudo.egg.warmth < EGG_COLD;
+
         function mood() {
+            if (!sudo.hatched) return `egg_${eggCold() ? "cold_" : ""}${crackLevel()}`;
             const s = sudo.stats;
             if (sudo.asleep) return "sleep";
             if (s.health < 40) return "idle_sick";
@@ -454,6 +654,13 @@
             return "idle_neutral";
         }
 
+        function moodInfo() {
+            if (sudo.hatched) return MOODS[mood()];
+            if (eggCold()) return ["Cold!", "bad", "The egg is freezing! Tap it to warm it up 🥶"];
+            if (crackLevel() === 2) return ["Wiggling", "good", "It's wiggling... almost there! Keep it warm."];
+            return ["Egg", "good", "Tap the egg to keep it warm. It hatches when the Hatching bar fills up."];
+        }
+
         // ---------- rendering ----------
 
         let anim = null;
@@ -462,7 +669,8 @@
         function animate(name, ms = 1600) { anim = { name, start: Date.now(), until: Date.now() + ms }; }
 
         function age() {
-            const mins = Math.floor((Date.now() - sudo.born) / 6e4);
+            if (!sudo.hatched) return "still an egg";
+            const mins = Math.floor(ageMs() / 6e4);
             const d = Math.floor(mins / 1440), h = Math.floor(mins / 60) % 24, m = mins % 60;
             const old = d ? `${d}d ${h}h old` : h ? `${h}h ${m}m old` : `${m}m old`;
             return isBaby() ? `baby · ${old}` : old;
@@ -470,31 +678,52 @@
 
         const level = v => v < 30 ? "bad" : v < 60 ? "warn" : "good";
 
-        $("stats").innerHTML = Object.entries(STATS).map(([k, label]) =>
-            `<div class="stat"><div class="stat-head">${label}<b id="v-${k}"></b></div><div class="meter"><i id="m-${k}"></i></div></div>`).join("");
+        let hudStage = null;
+
+        function statSet() { return sudo.hatched ? [STATS, sudo.stats] : [EGG_STATS, sudo.egg]; }
 
         function renderHud() {
-            for (const k of Object.keys(STATS)) {
-                const v = Math.round(sudo.stats[k]);
+            const [labels, values] = statSet();
+            if (hudStage !== sudo.hatched) {
+                hudStage = sudo.hatched;
+                $("stats").style.setProperty("--cols", Object.keys(labels).length);
+                $("stats").innerHTML = Object.entries(labels).map(([k, label]) =>
+                    `<div class="stat"><div class="stat-head">${label}<b id="v-${k}"></b></div><div class="meter"><i id="m-${k}"></i></div></div>`).join("");
+            }
+            for (const k of Object.keys(labels)) {
+                const v = Math.round(values[k]);
                 $("v-" + k).textContent = v;
                 const m = $("m-" + k);
                 m.style.width = v + "%";
-                m.dataset.level = level(v);
+                m.dataset.level = k === "progress" ? "good" : level(v);
             }
-            const [text, lvl, hint] = MOODS[mood()];
+            const [text, lvl, hint] = moodInfo();
             $("mood").textContent = text;
             $("mood").dataset.level = lvl;
             $("hint").textContent = hint;
             $("age").textContent = age();
-            sudoEl.alt = isBaby() ? "Baby Sudo, a fluffy penguin chick. Tap to pet him." : "Sudo the penguin. Tap to pet him.";
-            if (grewUp) {
+            $("tray").classList.toggle("locked", !sudo.hatched);
+            $("sleepBtn").setAttribute("aria-pressed", sudo.asleep);
+            $("sleepBtn").querySelector("span").textContent = sudo.asleep ? "Wake" : "Sleep";
+            sudoEl.alt = { egg: "Sudo's egg. Tap to keep it warm.", baby: "Baby Sudo, a fluffy penguin chick. Tap to pet him.", adult: "Sudo the penguin. Tap to pet him." }[stage()];
+            if (justHatched) {
+                justHatched = false;
+                animate("hatch", 2400);
+                say("🐣 SUDO HATCHED!! Say hi to your baby!", 4500);
+                setTimeout(() => burst("sparkle", 5), 1600);
+            } else if (grewUp) {
                 grewUp = false;
                 say("✨ Sudo grew up!! He's a big penguin now 🐧", 4500);
                 burst("sparkle", 5);
             }
-            sceneEl.classList.toggle("night", sudo.asleep);
-            $("sleepBtn").setAttribute("aria-pressed", sudo.asleep);
-            $("sleepBtn").querySelector("span").textContent = sudo.asleep ? "Wake" : "Sleep";
+            if (!$("debug").hidden) syncDebug();
+        }
+
+        // how far the head has bobbed down in this frame, so accessories follow it
+        function headDrop(name, frame) {
+            if (name === "eat") return frame === 1 ? 1 : 0;
+            if (name === "blink") return 0;
+            return frame;
         }
 
         function renderSprite() {
@@ -502,17 +731,30 @@
             let name, frame;
             if (anim && now < anim.until) {
                 name = anim.name;
-                frame = Math.floor((now - anim.start) / 400) % FRAMES[name];
+                // hatching plays once and holds on its last frame; everything else loops
+                frame = name === "hatch" ? Math.min(Math.floor((now - anim.start) / 800), 2) : Math.floor((now - anim.start) / 400) % FRAMES[name];
             } else {
                 anim = null;
                 name = mood();
                 frame = Math.floor(now / 700) % FRAMES[name];
-                const canBlink = !["sleep", "idle_overfed", "idle_sick"].includes(name);
+                const canBlink = sudo.hatched && !["sleep", "idle_overfed", "idle_sick"].includes(name);
                 if (canBlink && now > blinkUntil + 2500 && Math.random() < 0.02) blinkUntil = now + 160;
                 if (canBlink && now < blinkUntil) { name = "blink"; frame = 0; }
             }
-            const src = `sprites/${isBaby() ? "baby_" : ""}${name}_${frame + 1}.png`;
+            const src = spritePath(name, frame);
             if (!sudoEl.src.endsWith(src)) sudoEl.src = src;
+
+            const showAcc = sudo.hatched && name !== "hatch";
+            const drop = headDrop(name, frame) * world.px;
+            for (const slot of SLOTS) {
+                const el = $("acc-" + slot);
+                const id = sudo.wearing[slot];
+                el.hidden = !showAcc || !id;
+                if (el.hidden) continue;
+                const accSrc = `sprites/${prefixFor(name)}acc_${id}.png`;
+                if (!el.src.endsWith(accSrc)) el.src = accSrc;
+                el.style.transform = `translateY(${drop}px)`;
+            }
         }
 
         let sayTimer = 0;
@@ -544,6 +786,8 @@
 
         // ---------- care ----------
 
+        const STILL_AN_EGG = "He's still in his egg! Tap the egg to keep it warm 🥚";
+
         const ACTIONS = {
             feed() {
                 if (sudo.asleep) return say("Shhh, he's sleeping 😴");
@@ -562,6 +806,11 @@
             },
 
             pet() {
+                if (!sudo.hatched) {
+                    sudo.egg.warmth = clamp(sudo.egg.warmth + 12);
+                    burst("heart", 2);
+                    return say(pick(["You cuddle the egg 🥚💕", "Something wiggles inside 👀", "Warm and cozy 🥚", "You hear a tiny peep!"]));
+                }
                 count("pet");
                 if (sudo.asleep) { bump("fun", 3); burst("heart", 1); return say("He smiles in his sleep 🥹"); }
                 bump("fun", 10);
@@ -626,7 +875,8 @@
 
         function act(name) {
             tick();
-            ACTIONS[name]();
+            if (!sudo.hatched && name !== "pet") say(STILL_AN_EGG);
+            else ACTIONS[name]();
             save();
             renderHud();
         }
@@ -693,7 +943,7 @@
                 drag.over = overSudo(e.clientX, e.clientY);
                 sudoEl.classList.toggle("target", drag.over);
                 // scrubbing with the soap makes bubbles
-                if (drag.over && drag.item === "soap" && Date.now() - drag.lastBubble > 220) {
+                if (drag.over && sudo.hatched && drag.item === "soap" && Date.now() - drag.lastBubble > 220) {
                     drag.lastBubble = Date.now();
                     burst("bubble", 1);
                 }
@@ -726,11 +976,29 @@
         sudoEl.addEventListener("click", () => act("pet"));
         sudoEl.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act("pet"); } });
 
+        // ---------- sheets ----------
+
+        function openSheet(id, render) {
+            for (const other of ["diary", "closet", "debug"]) if (other !== id) $(other).hidden = true;
+            render();
+            $(id).hidden = false;
+            $(id).querySelector("[data-close]").focus();
+        }
+
+        document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => { $(b.dataset.close).hidden = true; }));
+        document.addEventListener("keydown", e => { if (e.key === "Escape") for (const id of ["diary", "closet", "debug"]) $(id).hidden = true; });
+
         // ---------- diary ----------
 
         function stamp(t) {
             const d = new Date(t);
             return d.toLocaleString("en-US", { month: "short", day: "2-digit" }) + " " + d.toTimeString().slice(0, 5);
+        }
+
+        function untilText(hoursLeft) {
+            hoursLeft = Math.max(1, Math.ceil(hoursLeft));
+            const days = Math.floor(hoursLeft / 24);
+            return `${days ? days + "d " : ""}${hoursLeft % 24}h`;
         }
 
         function renderDiary() {
@@ -744,40 +1012,350 @@
                 ol.appendChild(li);
             }
             const c = sudo.counts;
-            const hoursLeft = Math.ceil((GROW_UP_H * 36e5 - ageMs()) / 36e5);
-            const days = Math.floor(hoursLeft / 24);
-            const growing = isBaby() ? `Grows up in ${days ? days + "d " : ""}${hoursLeft % 24}h 🐣<br>` : "";
-            $("counts").innerHTML = growing + `Fish eaten: ${c.feed || 0} · Pets: ${c.pet || 0} · Baths: ${c.bathe || 0} · Ball games: ${c.play || 0}<br>
+            let status = "";
+            if (!sudo.hatched) status = `Hatches in about ${untilText((100 - sudo.egg.progress) / EGG_GROWTH)} if you keep him warm 🥚<br>`;
+            else if (isBaby()) status = `Grows up in ${untilText((GROW_UP_H * 36e5 - ageMs()) / 36e5)} 🐣<br>`;
+            $("counts").innerHTML = status + `Fish eaten: ${c.feed || 0} · Pets: ${c.pet || 0} · Baths: ${c.bathe || 0} · Ball games: ${c.play || 0}<br>
                 Also on valerie.wtf: <a href="game/">Package Panic</a> · <a href="archive/terminal-v2.html">the old terminal</a>`;
         }
 
-        $("diaryBtn").addEventListener("click", () => { renderDiary(); $("diary").hidden = false; $("diaryClose").focus(); });
-        $("diaryClose").addEventListener("click", () => { $("diary").hidden = true; $("diaryBtn").focus(); });
-        document.addEventListener("keydown", e => { if (e.key === "Escape") $("diary").hidden = true; });
+        $("diaryBtn").addEventListener("click", () => openSheet("diary", renderDiary));
+
+        // ---------- wardrobe ----------
+
+        const unlocked = a => !a.locked || debug.unlockAll || stage() === "adult";
+
+        function renderCloset() {
+            const grid = $("closetGrid");
+            grid.innerHTML = "";
+            if (!sudo.hatched) {
+                grid.innerHTML = `<p class="empty">He has to hatch before he can play dress-up 🥚</p>`;
+                return;
+            }
+            const prefix = stage() === "baby" ? "baby_" : "";
+            for (const a of ACCESSORIES) {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "acc-tile";
+                b.setAttribute("aria-pressed", sudo.wearing[a.slot] === a.id);
+                b.setAttribute("aria-disabled", !unlocked(a));
+                b.innerHTML = `<span class="mini"><img src="sprites/${prefix}idle_happy_1.png" alt=""><img src="sprites/${prefix}acc_${a.id}.png" alt=""></span>${a.name}`;
+                if (!unlocked(a)) b.insertAdjacentHTML("beforeend", `<small>${a.locked}</small>`);
+                b.addEventListener("click", () => wear(a));
+                grid.appendChild(b);
+            }
+        }
+
+        function wear(a) {
+            if (!unlocked(a)) return say(`${a.name}: ${a.locked.toLowerCase()} 👑`);
+            if (sudo.wearing[a.slot] === a.id) {
+                delete sudo.wearing[a.slot];
+                say(`He takes off the ${a.name.toLowerCase()}`);
+            } else {
+                sudo.wearing[a.slot] = a.id;
+                logEvent(`put on the ${a.name.toLowerCase()}`);
+                say(pick(["Looking sharp 😎", "So stylish!!", "He's feeling himself ✨", "A fashion icon 💅"]));
+                burst("sparkle", 2);
+            }
+            save();
+            renderCloset();
+        }
+
+        $("closetBtn").addEventListener("click", () => openSheet("closet", renderCloset));
+
+        // ---------- the world: a pixel-art Antarctic scene behind everything ----------
+
+        const PHASES = {
+            dawn:  { sky: ["#3b3f86", "#c97ba6", "#ffc9a3"], far: "#8d86c0", farCap: "#e9d9f0", near: "#b7b2dd", nearCap: "#fbeef6", ground: "#f6eef4", groundHi: "#ffffff", shadow: "#d6c8de", igloo: "#fbf6fb", iglooLine: "#d2c1d8", door: "#4a3f78", water: "#3e4f9a", waterHi: "#8aa0dc", sun: "#ffb36b", cloud: "#fbe3ea" },
+            day:   { sky: ["#3f8fe0", "#79b9f2", "#cfe8ff"], far: "#8fb4e3", farCap: "#eef6ff", near: "#b4d0f0", nearCap: "#ffffff", ground: "#eef6ff", groundHi: "#ffffff", shadow: "#c3d7f0", igloo: "#f7fbff", iglooLine: "#bcd0ea", door: "#33437a", water: "#2f6fc0", waterHi: "#8cc4f5", sun: "#fff2a8", cloud: "#ffffff" },
+            dusk:  { sky: ["#2a2f6e", "#a2508a", "#f59a6a"], far: "#6b4f8e", farCap: "#e5b7c8", near: "#8f6aa6", nearCap: "#f2cbd8", ground: "#e9d3e0", groundHi: "#f8e8f0", shadow: "#c3a3bd", igloo: "#f2e2ec", iglooLine: "#c29fb8", door: "#3a2c5e", water: "#3a3f88", waterHi: "#9b8acb", sun: "#ff8a5c", cloud: "#f6c4c4" },
+            night: { sky: ["#070a24", "#121a4a", "#263a7a"], far: "#1d2754", farCap: "#5a6aa0", near: "#28366a", nearCap: "#7b8cc2", ground: "#9fb2dc", groundHi: "#c6d3f0", shadow: "#7a8dbf", igloo: "#aebfe4", iglooLine: "#7f93c4", door: "#f7c14e", water: "#0e1846", waterHi: "#4c5f9c", sun: "#f4f1d0", cloud: "#33407a" }
+        };
+
+        const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const canvas = $("world");
+        const ctx = canvas.getContext("2d");
+        const world = { px: 8, W: 0, H: 0, cx: 0, G: 0, flakes: [] };
+
+        function phase() {
+            if (debug.sky) return debug.sky;
+            if (sudo.hatched && sudo.asleep) return "night";
+            const h = new Date().getHours();
+            return h < 5 || h >= 21 ? "night" : h < 8 ? "dawn" : h < 17 ? "day" : "dusk";
+        }
+
+        // line the world's pixels up exactly with Sudo's pixels
+        function layout() {
+            const r = $("spriteBox").getBoundingClientRect();
+            if (!r.width) return;
+            const px = r.width / 32;
+            const ox = ((r.left % px) + px) % px - px, oy = ((r.top % px) + px) % px - px;
+            world.px = px;
+            world.W = Math.ceil((innerWidth - ox) / px) + 1;
+            world.H = Math.ceil((innerHeight - oy) / px) + 1;
+            canvas.width = world.W;
+            canvas.height = world.H;
+            Object.assign(canvas.style, { left: ox + "px", top: oy + "px", width: world.W * px + "px", height: world.H * px + "px" });
+            world.cx = Math.round((r.left - ox) / px) + 16;
+            world.G = Math.round((r.top - oy) / px) + 30;
+            const n = Math.round(world.W * world.H / 140);
+            world.flakes = Array.from({ length: n }, (_, i) => ({ x: Math.random() * world.W, y: Math.random() * world.H, v: 0.15 + Math.random() * 0.25, s: i % 7 }));
+            drawWorld(performance.now());
+        }
+
+        const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+        const mix = (a, b, t) => `rgb(${hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t)).join(",")})`;
+
+        function rect(x, y, w, h, color) { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); }
+
+        function disc(cx, cy, r, color) {
+            ctx.fillStyle = color;
+            for (let y = -r; y <= r; y++) {
+                const w = Math.round(Math.sqrt(r * r - y * y));
+                ctx.fillRect(cx - w, cy + y, w * 2 + 1, 1);
+            }
+        }
+
+        function drawWorld(t) {
+            const { W, H, cx, G } = world;
+            if (!W) return;
+            const ph = phase(), P = PHASES[ph];
+            ctx.clearRect(0, 0, W, H);
+
+            // sky: dithered bands from the top color, through the middle, to the horizon
+            const bands = 12;
+            for (let b = 0; b < bands; b++) {
+                const f = b / (bands - 1);
+                const color = f < 0.5 ? mix(P.sky[0], P.sky[1], f * 2) : mix(P.sky[1], P.sky[2], (f - 0.5) * 2);
+                const y0 = Math.floor(G * b / bands), y1 = Math.floor(G * (b + 1) / bands);
+                rect(0, y0, W, y1 - y0, color);
+                if (b < bands - 1) {
+                    const next = f + 1 / (bands - 1) < 0.5 ? mix(P.sky[0], P.sky[1], (f + 1 / (bands - 1)) * 2) : mix(P.sky[1], P.sky[2], (f + 1 / (bands - 1) - 0.5) * 2);
+                    ctx.fillStyle = next;
+                    for (let x = y1 % 2; x < W; x += 2) ctx.fillRect(x, y1 - 1, 1, 1);
+                }
+            }
+
+            if (ph === "night") {
+                for (let i = 0; i < W * 0.6; i++) {
+                    const x = (i * 73 + 17) % W, y = (i * 151 + 7) % Math.max(1, Math.floor(G * 0.75));
+                    ctx.globalAlpha = reduceMotion ? 0.8 : 0.45 + 0.55 * Math.abs(Math.sin(t / 900 + i * 1.7));
+                    rect(x, y, 1, 1, i % 9 === 0 ? "#ffe9a8" : "#ffffff");
+                }
+                // aurora
+                for (let x = 0; x < W; x++) {
+                    const wx = x - cx;
+                    const y = Math.round(G * 0.2 + Math.sin(wx * 0.11 + t / 2400) * 3 + Math.sin(wx * 0.043 - t / 3300) * 5);
+                    for (let k = 0; k < 9; k++) {
+                        ctx.globalAlpha = 0.32 * (1 - k / 9);
+                        rect(x, y + k, 1, 1, k < 3 ? "#7df5c4" : "#4fd1a0");
+                    }
+                    ctx.globalAlpha = 0.18;
+                    rect(x, y - 3, 1, 3, "#8a7cf0");
+                }
+                ctx.globalAlpha = 1;
+                // crescent moon
+                const mx = Math.round(W * 0.8), my = Math.round(G * 0.18);
+                disc(mx, my, 5, P.sun);
+                disc(mx + 3, my - 2, 4, mix(P.sky[0], P.sky[1], 0.25));
+            } else {
+                const low = ph !== "day";
+                disc(Math.round(low ? cx - W * 0.28 : W * 0.78), Math.round(low ? G - 10 : G * 0.22), low ? 7 : 4, P.sun);
+                // clouds drifting
+                for (let i = 0; i < 4; i++) {
+                    const span = W + 40;
+                    const x = Math.round(((i * 53 + t / (reduceMotion ? 1e9 : 900) * (0.6 + i * 0.2)) % span) - 20);
+                    const y = Math.round(G * (0.12 + i * 0.13));
+                    ctx.globalAlpha = 0.85;
+                    rect(x, y, 14, 3, P.cloud); rect(x + 3, y - 2, 7, 2, P.cloud); rect(x + 9, y - 1, 4, 1, P.cloud);
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            // far mountains, then near icebergs. heights come from Sudo's position so they don't jump around
+            for (let x = 0; x < W; x++) {
+                const wx = x - cx;
+                const hf = Math.round(16 + 6 * Math.sin(wx * 0.09 + 1.3) + 4 * Math.sin(wx * 0.23 + 0.4) + 2 * Math.sin(wx * 0.51));
+                rect(x, G - hf, 1, hf, P.far);
+                rect(x, G - hf, 1, hf > 18 ? 3 : 1, P.farCap);
+                const hn = Math.round(6 + 3 * Math.sin(wx * 0.13 + 2) + 2 * Math.sin(wx * 0.31 + 1));
+                rect(x, G - hn, 1, hn, P.near);
+                rect(x, G - hn, 1, 1, P.nearCap);
+            }
+
+            // the ice he stands on
+            rect(0, G, W, H - G, P.ground);
+            rect(0, G, W, 1, P.groundHi);
+            for (let i = 0; i < W * 1.5; i++) {
+                const x = (i * 97 + 31) % W, y = G + 3 + (i * 41) % Math.max(1, H - G - 3);
+                rect(x, y, 2, 1, P.shadow);
+            }
+            rect(cx - 11, G, 22, 1, P.shadow);
+            rect(cx - 8, G + 1, 16, 1, P.shadow);
+
+            // igloo to his left, door facing him (it glows at night)
+            const ix = cx - 36;
+            for (let y = -11; y <= 0; y++) {
+                for (let x = -13; x <= 13; x++) {
+                    if ((x / 13) ** 2 + (y / 11.5) ** 2 > 1) continue;
+                    const edge = (x / 13) ** 2 + (y / 11.5) ** 2 > 0.82;
+                    const brick = y % 4 === 0 || (x + (Math.floor(y / 4) % 2 ? 3 : 0)) % 6 === 0;
+                    rect(ix + x, G + y, 1, 1, edge || brick ? P.iglooLine : P.igloo);
+                }
+            }
+            for (let y = -6; y <= 0; y++)
+                for (let x = 6; x <= 12; x++)
+                    if (((x - 9) / 3.4) ** 2 + (y / 6.5) ** 2 <= 1) rect(ix + x, G + y, 1, 1, P.door);
+
+            // fishing hole to his right
+            const fx = cx + 27, fy = G + 2;
+            for (let y = -2; y <= 2; y++) {
+                const w = Math.round(8 * Math.sqrt(1 - (y / 2.6) ** 2));
+                rect(fx - w, fy + y, w * 2 + 1, 1, y === -2 ? P.shadow : P.water);
+            }
+            const ripple = reduceMotion ? 0 : Math.floor(t / 600) % 4;
+            rect(fx - 3 + ripple, fy, 3, 1, P.waterHi);
+
+            // snow
+            if (debug.snow) {
+                ctx.globalAlpha = 0.9;
+                for (const f of world.flakes) {
+                    if (!reduceMotion) {
+                        f.y += f.v;
+                        f.x += Math.sin(t / 1300 + f.s) * 0.08;
+                        if (f.y > H) { f.y = -1; f.x = Math.random() * W; }
+                    }
+                    rect(Math.round(f.x), Math.round(f.y), 1, 1, "#ffffff");
+                }
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        let lastDraw = 0;
+        function loop(t) {
+            if (t - lastDraw > (reduceMotion ? 2000 : 90)) { lastDraw = t; drawWorld(t); }
+            requestAnimationFrame(loop);
+        }
+
+        addEventListener("resize", layout);
+        new ResizeObserver(layout).observe($("spriteBox"));
+        if (document.fonts) document.fonts.ready.then(layout);
+
+        // ---------- debug (open the page with #debug) ----------
+
+        function syncDebug() {
+            const st = stage();
+            document.querySelectorAll("#dbgStage button").forEach(b => b.setAttribute("aria-pressed", b.dataset.stage === st));
+            document.querySelectorAll("#dbgSky button").forEach(b => b.setAttribute("aria-pressed", b.dataset.sky === debug.sky));
+            $("dbgUnlock").setAttribute("aria-pressed", debug.unlockAll);
+            $("dbgSnow").setAttribute("aria-pressed", debug.snow);
+            const [labels, values] = statSet();
+            const box = $("dbgSliders");
+            if (box.dataset.stage !== String(sudo.hatched)) {
+                box.dataset.stage = sudo.hatched;
+                box.innerHTML = Object.entries(labels).map(([k, label]) =>
+                    `<label class="slider"><span>${label}</span><input type="range" min="0" max="100" data-stat="${k}"><span></span></label>`).join("");
+                box.querySelectorAll("input").forEach(inp => inp.addEventListener("input", () => {
+                    statSet()[1][inp.dataset.stat] = Number(inp.value);
+                    save();
+                    renderHud();
+                }));
+            }
+            box.querySelectorAll("input").forEach(inp => {
+                const v = Math.round(values[inp.dataset.stat]);
+                if (document.activeElement !== inp) inp.value = v;
+                inp.nextElementSibling.textContent = v;
+            });
+        }
+
+        function debugDo(fn) { fn(); tick(); save(); renderHud(); }
+
+        function setStage(st) {
+            const now = Date.now();
+            sudo.asleep = false;
+            if (st === "egg") {
+                Object.assign(sudo, { hatched: false, grown: false, laid: now, born: now, egg: { warmth: 70, progress: 0 } });
+                logEvent("went back to being an egg (debug) 🥚");
+            } else {
+                Object.assign(sudo, { hatched: true, grown: false, born: st === "baby" ? now : now - GROW_UP_H * 36e5 - 6e4 });
+                sudo.egg.progress = 100;
+            }
+        }
+
+        function skip(hours) {
+            const ms = hours * 36e5;
+            sudo.last -= ms;
+            sudo.born -= ms;
+            sudo.laid -= ms;
+            sudo.overfedUntil -= ms;
+        }
+
+        const DEBUG_MOODS = {
+            hungry() { sudo.stats.food = 10; },
+            stinky() { sudo.stats.clean = 10; },
+            sick() { sudo.stats.health = 20; },
+            sleepy() { sudo.stats.energy = 10; sudo.asleep = false; },
+            bored() { sudo.stats.fun = 10; },
+            overfed() { sudo.stats.food = 100; sudo.overfedUntil = Date.now() + 5 * 6e4; },
+            perfect() { for (const k of Object.keys(sudo.stats)) sudo.stats[k] = 100; sudo.overfedUntil = 0; sudo.asleep = false; },
+            cold() { if (!sudo.hatched) sudo.egg.warmth = 10; else say("That one's for the egg stage 🥚"); }
+        };
+
+        document.querySelectorAll("[data-stage]").forEach(b => b.addEventListener("click", () => debugDo(() => setStage(b.dataset.stage))));
+        document.querySelectorAll("[data-skip]").forEach(b => b.addEventListener("click", () => debugDo(() => skip(Number(b.dataset.skip)))));
+        document.querySelectorAll("[data-mood]").forEach(b => b.addEventListener("click", () => debugDo(DEBUG_MOODS[b.dataset.mood])));
+        document.querySelectorAll("[data-sky]").forEach(b => b.addEventListener("click", () => { debug.sky = b.dataset.sky; syncDebug(); drawWorld(performance.now()); }));
+        document.querySelectorAll("[data-anim]").forEach(b => b.addEventListener("click", () => {
+            const a = b.dataset.anim;
+            if (a === "grow") { grewUp = true; renderHud(); return; }
+            if (a !== "hatch" && !sudo.hatched) return say(STILL_AN_EGG);
+            animate(a, { eat: 1200, pet: 1600, bath: 2000, play: 1600, hatch: 2400 }[a]);
+        }));
+        $("dbgUnlock").addEventListener("click", () => { debug.unlockAll = !debug.unlockAll; syncDebug(); });
+        $("dbgSnow").addEventListener("click", () => { debug.snow = !debug.snow; syncDebug(); });
+
+        let resetArmed = 0;
+        $("dbgReset").addEventListener("click", () => {
+            if (Date.now() - resetArmed > 3000) {
+                resetArmed = Date.now();
+                $("dbgReset").textContent = "Tap again to really reset";
+                setTimeout(() => { $("dbgReset").textContent = "Reset Sudo"; }, 3000);
+                return;
+            }
+            resetArmed = 0;
+            $("dbgReset").textContent = "Reset Sudo";
+            sudo = freshPenguin();
+            logEvent("found an egg 🥚");
+            save();
+            hudStage = null;
+            renderHud();
+            say("🥚 Fresh egg! Keep it warm.");
+        });
+
+        function checkDebugHash() {
+            const on = location.hash === "#debug";
+            $("debugBtn").hidden = !on;
+            if (!on) $("debug").hidden = true;
+        }
+        $("debugBtn").addEventListener("click", () => openSheet("debug", syncDebug));
+        addEventListener("hashchange", checkDebugHash);
+        checkDebugHash();
 
         // ---------- boot ----------
 
-        const stars = $("stars");
-        for (let i = 0; i < 28; i++) {
-            const s = document.createElement("i");
-            s.style.left = Math.random() * 100 + "%";
-            s.style.top = Math.random() * 60 + "%";
-            s.style.opacity = 0.4 + Math.random() * 0.6;
-            stars.appendChild(s);
-        }
-
         tick();
-        // if he just grew up, renderHud announces that instead
         if (isNew) {
-            logEvent("hatched! 🐣");
+            logEvent("found an egg 🥚");
             save();
-            setTimeout(() => say("🐣 Sudo hatched! He's a tiny baby. Look after him and he'll grow up in 3 days!", 4500), 400);
-        } else if (!grewUp) {
-            setTimeout(() => say(`Welcome back! ${MOODS[mood()][2]}`, 3500), 400);
+            setTimeout(() => say("🥚 You found an egg! Tap it to keep it warm and it'll hatch in a couple of hours.", 5000), 400);
+        } else if (!justHatched && !grewUp) {
+            setTimeout(() => say(`Welcome back! ${moodInfo()[2]}`, 3500), 400);
         }
 
+        layout();
         renderHud();
         renderSprite();
+        requestAnimationFrame(loop);
         setInterval(renderSprite, 100);
         setInterval(() => { tick(); renderHud(); }, 10000);
         document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); renderHud(); } });

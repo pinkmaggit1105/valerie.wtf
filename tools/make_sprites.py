@@ -30,6 +30,21 @@ PAL = {
     "fish": (110, 170, 230, 255),
     "fishdk": (60, 110, 180, 255),
     "yellow": (255, 220, 90, 255),
+    "eggshell": (247, 242, 230, 255),
+    "eggshade": (220, 211, 192, 255),
+    "speck": (168, 182, 206, 255),
+    "coldshell": (212, 231, 250, 255),
+    "coldshade": (166, 198, 236, 255),
+    "plum": (112, 46, 100, 255),
+    "plumdk": (78, 28, 70, 255),
+    "gold": (255, 206, 64, 255),
+    "golddk": (212, 148, 30, 255),
+    "knit": (72, 194, 176, 255),
+    "knitdk": (40, 146, 134, 255),
+    "bow": (255, 122, 172, 255),
+    "bowdk": (210, 70, 130, 255),
+    "scarf": (226, 62, 74, 255),
+    "frame": (255, 96, 178, 255),
 }
 
 
@@ -67,12 +82,14 @@ class Canvas:
 
 class Geo:
     """Where the face parts are, so moods and props can be drawn on either stage."""
-    def __init__(self, eye_y, beak_y, cheek_y, face_bottom):
+    def __init__(self, eye_y, beak_y, cheek_y, face_bottom, head_top, neck_y):
         self.eye_x = (11, 17)      # left edge of each 4px-wide eye area
         self.eye_y = eye_y         # middle row of the eyes
         self.beak_y = beak_y       # top row of the beak
         self.cheek_y = cheek_y
         self.face_bottom = face_bottom
+        self.head_top = head_top   # first row of the head (not counting the tuft)
+        self.neck_y = neck_y       # where a scarf goes
 
 
 def feet(c, rows, spans):
@@ -101,7 +118,7 @@ def adult(dy=0, fat=0):
     c.ellipse(19, 10 + dy, 2.2, 3.4, "white")
     feet(c, (28, 29, 30), ((7, 14), (17, 24)))
     c.outline()
-    return c, Geo(eye_y=10 + dy, beak_y=13 + dy, cheek_y=13 + dy, face_bottom=14 + dy)
+    return c, Geo(eye_y=10 + dy, beak_y=13 + dy, cheek_y=13 + dy, face_bottom=14 + dy, head_top=3 + dy, neck_y=16 + dy)
 
 
 def baby(dy=0, fat=0):
@@ -122,7 +139,7 @@ def baby(dy=0, fat=0):
         c.set(x, y + dy, "down")
     feet(c, (29, 30), ((11, 14), (17, 20)))
     c.outline()
-    return c, Geo(eye_y=13 + dy, beak_y=16 + dy, cheek_y=15 + dy, face_bottom=18 + dy)
+    return c, Geo(eye_y=13 + dy, beak_y=16 + dy, cheek_y=15 + dy, face_bottom=18 + dy, head_top=5 + dy, neck_y=19 + dy)
 
 
 STAGES = {"": adult, "baby_": baby}
@@ -351,6 +368,190 @@ for prefix, draw in STAGES.items():
             y = g.beak_y + 1
             c.set(19, y, "fishdk"); c.set(20, y - 1, "fishdk"); c.set(20, y + 1, "fishdk")
         save(c, f"{prefix}eat_{f + 1}")
+
+
+# ---------- egg ----------
+
+EGG = (16, 21, 7.6, 9.4)
+
+
+def in_egg(x, y, lean=0, grow=0):
+    cx, cy, rx, ry = EGG
+    x -= round((30 - y) * lean / 10)   # lean: tilt the top of the egg sideways
+    return ((x + 0.5 - cx) / (rx + grow)) ** 2 + ((y + 0.5 - cy) / (ry + grow)) ** 2 <= 1
+
+
+def cracks(c, level, shift=0):
+    if level >= 1:
+        for (x, y) in ((12, 19), (13, 20), (14, 19), (15, 20), (16, 21), (17, 20), (18, 21)):
+            c.set(x + shift, y, "outline")
+    if level >= 2:
+        for (x, y) in ((9, 20), (10, 21), (11, 20), (19, 20), (20, 21), (21, 20), (22, 21), (16, 22), (16, 23), (15, 24)):
+            c.set(x + shift, y, "outline")
+
+
+def egg(level=0, cold=False, frame=0):
+    c = Canvas()
+    shell, shade = ("coldshell", "coldshade") if cold else ("eggshell", "eggshade")
+    lean = 0 if cold else (1 if frame else 0)
+    shift = 1 if (cold and frame) else 0            # a cold egg shivers instead of wobbling
+    for y in range(S):
+        for x in range(S):
+            if in_egg(x - shift, y, lean):
+                inner = in_egg(x - shift + 2, y + 1, lean, grow=-0.6)
+                c.set(x, y, shell if inner else shade)
+    for (x, y) in ((13, 15), (18, 17), (11, 23), (17, 25), (20, 22), (14, 27)):
+        x += shift + (round((30 - y) * lean / 10))
+        c.set(x, y, "speck")
+    c.set(12 + shift + lean, 16, "white"); c.set(12 + shift + lean, 17, "white")
+    cracks(c, level, shift + lean)
+    if cold:
+        for (x, y) in ((5, 12), (26, 9), (4, 22), (27, 19)):
+            c.set(x, y, "white")
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                c.set(x + dx, y + dy, "blue")
+    c.outline()
+    return c
+
+
+for level in range(3):
+    for f in range(2):
+        save(egg(level, frame=f), f"egg_{level}_{f + 1}")
+        save(egg(level, cold=True, frame=f), f"egg_cold_{level}_{f + 1}")
+
+
+def shell_bottom(c, top=23):
+    """The bottom half of a hatched egg, drawn over whatever is sitting in it."""
+    shell = {}
+    for y in range(S):
+        for x in range(S):
+            edge = top + (1 if x % 3 == 1 else -1 if x % 3 == 0 else 0)
+            if y >= edge and in_egg(x, y, grow=0.4):
+                shell[(x, y)] = "eggshade" if x > 19 else "eggshell"
+    for (x, y), col in shell.items():
+        c.set(x, y, col)
+    for (x, y) in shell:
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if (x + dx, y + dy) not in shell:
+                c.set(x + dx, y + dy, "outline")
+
+
+# hatching: the egg shakes and cracks, the top pops off, then baby Sudo says hi
+c = egg(2, frame=1)
+for (x, y) in ((5, 8), (27, 10), (8, 4), (24, 5)):
+    c.set(x, y, "eggshell")
+cracks(c, 2, 1)
+save(c, "hatch_1")
+
+c, g = baby()
+eyes(c, g, "closed")
+beak(c, g, small=True)
+shell_bottom(c)
+for (x, y) in ((3, 4), (4, 3), (5, 3), (6, 3), (7, 4), (4, 4), (5, 4), (6, 4)):
+    c.set(x, y, "eggshell")
+for (x, y) in ((3, 5), (2, 4), (4, 2), (5, 2), (6, 2), (7, 3), (8, 4), (8, 5), (7, 5), (6, 5), (5, 5), (4, 5)):
+    if not c.get(x, y):
+        c.set(x, y, "outline")
+save(c, "hatch_2")
+
+c, g = baby()
+eyes(c, g, "happy")
+beak(c, g, open_=True, small=True)
+blush(c, g)
+sparkles(c, g, 0)
+for (x, y) in ((4, 29), (5, 29), (5, 28), (26, 29), (27, 29), (26, 28), (9, 30), (23, 30)):
+    c.set(x, y, "eggshell")
+save(c, "hatch_3")
+
+
+# ---------- accessories ----------
+# One overlay per stage, lined up with that stage's head. The page lays them on top of Sudo.
+
+def wear(name, draw, frame_color="outline"):
+    for prefix, body in STAGES.items():
+        _, g = body()
+        c = Canvas()
+        draw(c, g)
+        c.outline(frame_color)
+        save(c, f"{prefix}acc_{name}")
+
+
+def tophat(c, g):
+    t = g.head_top
+    for x in range(9, 24):
+        c.set(x, t + 1, "plumdk")
+    for y in range(t - 4, t + 1):
+        for x in range(11, 22):
+            c.set(x, y, "plum")
+    for x in range(11, 22):
+        c.set(x, t, "beak")
+    c.set(12, t - 3, "plumdk"); c.set(12, t - 2, "plumdk")
+
+
+def beanie(c, g):
+    t = g.head_top
+    for y in range(t - 2, t + 4):
+        for x in range(S):
+            if ((x + 0.5 - 16) / 8.6) ** 2 + ((y + 0.5 - (t + 4)) / 6) ** 2 <= 1:
+                c.set(x, y, "knitdk" if x % 3 == 0 else "knit")
+    for x in range(7, 25):
+        c.set(x, t + 3, "white" if x % 2 else "shade")
+    for (x, y) in ((15, t - 4), (16, t - 4), (15, t - 3), (16, t - 3), (14, t - 3), (17, t - 3)):
+        c.set(x, y, "white")
+
+
+def bow(c, g):
+    t = g.head_top
+    x0, y0 = 20, t
+    for (dx, dy) in ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 1)):
+        c.set(x0 + dx, y0 + dy, "bow")
+    for (dx, dy) in ((6, 0), (6, 1), (6, 2), (5, 0), (5, 1), (5, 2), (4, 1)):
+        c.set(x0 + dx, y0 + dy, "bow")
+    c.set(x0 + 3, y0 + 1, "bowdk")
+    c.set(x0, y0, "white")
+
+
+def crown(c, g):
+    t = g.head_top
+    for y in range(t - 1, t + 2):
+        for x in range(11, 22):
+            c.set(x, y, "gold")
+    for x in (11, 13, 16, 19, 21):
+        c.set(x, t - 2, "gold")
+    for x in (11, 16, 21):
+        c.set(x, t - 3, "gold")
+    for x in range(11, 22):
+        c.set(x, t + 1, "golddk")
+    c.set(13, t, "red"); c.set(16, t, "blue"); c.set(19, t, "red")
+
+
+def shades(c, g):
+    ey = g.eye_y
+    for x0 in g.eye_x:
+        for y in range(ey - 1, ey + 2):
+            for x in range(x0 - 1, x0 + 4):
+                c.set(x, y, "eye")
+        c.set(x0, ey - 1, "white"); c.set(x0 + 1, ey, "white")
+    for x in (15, 16):
+        c.set(x, ey - 1, "eye")
+
+
+def scarf(c, g):
+    n = g.neck_y
+    for y in (n, n + 1):
+        for x in range(7, 25):
+            c.set(x, y, "white" if x % 4 == 0 else "scarf")
+    for y in range(n + 2, n + 6):
+        for x in (19, 20):
+            c.set(x, y, "white" if y % 3 == 0 else "scarf")
+
+
+wear("tophat", tophat)
+wear("beanie", beanie)
+wear("bow", bow)
+wear("crown", crown)
+wear("shades", shades, frame_color="frame")
+wear("scarf", scarf)
 
 
 # props: 16x16 items you drag onto Sudo, plus particles
