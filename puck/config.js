@@ -1,26 +1,26 @@
-// Puck the goose: everything that makes him him. The engine in shared/pet.js does the rest.
+// Puck the goose: everything that makes her her. The engine in shared/pet.js does the rest.
 (window.PETS ||= {}).puck = {
     name: "Puck",
     species: "goose",
-    blurb: "A goose who lives by the pond in the park. Loves lettuce and his bell. Will steal your sandwich.",
+    blurb: "A goose who lives by the pond in the park. Loves lettuce and her bell. Will steal your sandwich.",
     saveKey: "puck-pet",
     spriteDir: "sprites/puck/",
     growUpHours: 72,
     card: { sky: "#8cc8f4", ground: "#7cc461", line: "#3f86d0" },
     stages: { baby: "gosling", babyTitle: "Gosling" },
 
-    // [chip text, chip level, hint under him]
+    // [chip text, chip level, hint under her]
     moods: {
-        sleep:         ["Asleep", "", "Shh. He's asleep. Do not poke the goose."],
-        idle_sick:     ["Sick", "bad", "He's sick! Give him medicine, then feed him and clean him."],
-        idle_overfed:  ["Too full", "warn", "Too much lettuce. Give him a few minutes to digest."],
-        idle_hungry:   ["Starving", "bad", "He's hungry and getting ideas. Drag some lettuce to him."],
-        idle_stinky:   ["Muddy", "warn", "He's been in the mud again. Splash him with the watering can."],
-        idle_sleepy:   ["Sleepy", "warn", "Even menaces need naps. Tap the moon to put him to bed."],
-        idle_sad:      ["Bored", "warn", "He's bored, which is dangerous. Ring his bell, or pet him."],
-        idle_ecstatic: ["Peak goose", "good", "He's never been happier. Nobody's sandwich is safe."],
-        idle_happy:    ["Happy", "good", "Drag things onto Puck, or tap him to pet him. At your own risk."],
-        idle_neutral:  ["Plotting", "", "He's plotting something. Drag things onto Puck, or tap him to pet him."]
+        sleep:         ["Asleep", "", "Shh. She's asleep. Do not poke the goose."],
+        idle_sick:     ["Sick", "bad", "She's sick! Give her medicine, then feed her and clean her."],
+        idle_overfed:  ["Too full", "warn", "Too much lettuce. Give her a few minutes to digest."],
+        idle_hungry:   ["Starving", "bad", "She's hungry and getting ideas. Drag some lettuce to her."],
+        idle_stinky:   ["Muddy", "warn", "She's been in the mud again. Splash her with the watering can."],
+        idle_sleepy:   ["Sleepy", "warn", "Even menaces need naps. Tap the moon to put her to bed."],
+        idle_sad:      ["Bored", "warn", "She's bored, which is dangerous. Ring her bell, or pet her."],
+        idle_ecstatic: ["Peak goose", "good", "She's never been happier. Nobody's sandwich is safe."],
+        idle_happy:    ["Happy", "good", "Drag things onto Puck, or tap her to pet her. At your own risk."],
+        idle_neutral:  ["Plotting", "", "She's plotting something. Drag things onto Puck, or tap her to pet her."]
     },
     eggMoods: {
         cold:     ["Cold!", "bad", "The egg is freezing! Tap it to warm it up 🥶"],
@@ -40,7 +40,7 @@
         { id: "bow", name: "Bow", slot: "head" },
         { id: "partyhat", name: "Party hat", slot: "head" },
         { id: "flowers", name: "Flower crown", slot: "head" },
-        { id: "crown", name: "Crown", slot: "head", unlock: "adult", lockedText: "Unlocks when he grows up" },
+        { id: "crown", name: "Crown", slot: "head", unlock: "adult", lockedText: "Unlocks when she grows up" },
         { id: "sunhat", name: "Sun hat", slot: "head", unlock: "sunhat", lockedText: "Snatch a sun hat to unlock" },
         { id: "shades", name: "Shades", slot: "face" },
         { id: "heartshades", name: "Heart shades", slot: "face" },
@@ -78,8 +78,8 @@
             nothingYet: "Nothing stolen yet. Tap <b>Snatch!</b> to raid the picnic 🧺",
             food: {
                 egg: "Puck hasn't hatched yet, so you sneak it back 🧺",
-                asleep: "Puck's asleep, so you leave it by his nest for later",
-                full: "He's too full, so he just guards it jealously",
+                asleep: "Puck's asleep, so you leave it by her nest for later",
+                full: "She's too full, so she just guards it jealously",
                 ate: "Puck gobbles it up! HONK"
             }
         }
@@ -102,75 +102,75 @@
             grewUp: "grew up into a big goose! 🪿"
         },
         eggAge: "still an egg",
-        poopHint: "Ew! He pooped on the path. Tap the poop to clean it up 💩",
+        poopHint: "Ew! She pooped on the path. Tap the poop to clean it up 💩",
         alt: {
             egg: "Puck's egg. Tap to keep it warm.",
-            baby: "Baby Puck, a fluffy yellow gosling. Tap to pet him.",
-            adult: "Puck the goose. Tap to pet him, if you dare."
+            baby: "Baby Puck, a fluffy yellow gosling. Tap to pet her.",
+            adult: "Puck the goose. Tap to pet her, if you dare."
         },
         foundEgg: "🥚 You found a big goose egg by the pond! Tap it to keep it warm and it'll hatch in a couple of hours.",
         freshEgg: "🥚 Fresh goose egg! Keep it warm.",
-        stillEgg: "He's still in his egg! Tap the egg to keep it warm 🥚",
-        hatched: "🐣 PUCK HATCHED!! He's a tiny gosling and he already has opinions.",
-        grewUp: "✨ Puck grew up!! He's a big goose now. Lock up your sandwiches 🪿",
+        stillEgg: "She's still in her egg! Tap the egg to keep it warm 🥚",
+        hatched: "🐣 PUCK HATCHED!! She's a tiny gosling and she already has opinions.",
+        grewUp: "✨ Puck grew up!! She's a big goose now. Lock up your sandwiches 🪿",
         pooped: "💩 Puck pooped. On purpose, probably.",
         egg: { says: ["You cuddle the egg 🥚💕", "Something kicks inside 👀", "You hear a tiny honk!", "Warm and cozy 🥚"] },
         feed: {
-            asleep: "Shhh, he's asleep 😴",
-            full: "He's too full! Now he has a tummy ache 🤢",
+            asleep: "Shhh, she's asleep 😴",
+            full: "She's too full! Now she has a tummy ache 🤢",
             fullLog: "got overfed and now has a tummy ache 🤢",
             log: "ate some lettuce 🥬",
-            says: ["Crunch crunch 🥬", "*aggressive munching* 🥬", "He ate it like it owed him money 🥬", "HONK (thank you) 🥬"]
+            says: ["Crunch crunch 🥬", "*aggressive munching* 🥬", "She ate it like it owed her money 🥬", "HONK (thank you) 🥬"]
         },
         pet: {
-            asleep: "He mutters a sleepy honk 🥹",
+            asleep: "She mutters a sleepy honk 🥹",
             log: "got petted 🥰",
-            says: ["He allows it. This time. 🥰", "*soft honk*", "He leans in. You've been chosen 🥰", "He nibbles your sleeve affectionately"]
+            says: ["She allows it. This time. 🥰", "*soft honk*", "She leans in. You've been chosen 🥰", "She nibbles your sleeve affectionately"]
         },
         bathe: {
-            asleep: "You can't splash a sleeping goose. He'll remember.",
+            asleep: "You can't splash a sleeping goose. She'll remember.",
             log: "had a splash 💦",
-            stinky: "The mud is gone ✨ He shakes it all over you",
-            done: "Splish splash! He flaps around happily ✨"
+            stinky: "The mud is gone ✨ She shakes it all over you",
+            done: "Splish splash! She flaps around happily ✨"
         },
         play: {
-            asleep: "He's asleep. Ring the bell later 😴",
-            sick: "He's too sick to play 🤒",
-            tired: "He's too tired to play 🥱",
-            log: "rang his bell 🔔",
-            says: ["DING DING DING 🔔", "He rings it and runs off cackling 🔔", "He's obsessed with this bell 🔔"]
+            asleep: "She's asleep. Ring the bell later 😴",
+            sick: "She's too sick to play 🤒",
+            tired: "She's too tired to play 🥱",
+            log: "rang her bell 🔔",
+            says: ["DING DING DING 🔔", "She rings it and runs off cackling 🔔", "She's obsessed with this bell 🔔"]
         },
         heal: {
-            asleep: "Let him sleep first 😴",
-            healthy: "He's healthy! No medicine needed 💚",
-            log: "took his medicine 💊",
-            better: "Brave goose. He feels much better 💊",
-            needsMore: "Much better! Now feed him and clean him 💊"
+            asleep: "Let her sleep first 😴",
+            healthy: "She's healthy! No medicine needed 💚",
+            log: "took her medicine 💊",
+            better: "Brave goose. She feels much better 💊",
+            needsMore: "Much better! Now feed her and clean her 💊"
         },
         sleep: {
             wokeLog: "got woken up 😠",
-            woke: "He's awake, and he WILL remember this 😠",
-            refuse: "He refuses. Geese do not nap on command 😤",
+            woke: "She's awake, and she WILL remember this 😠",
+            refuse: "She refuses. Geese do not nap on command 😤",
             log: "went to sleep 💤",
             night: "Goodnight, menace 🌙"
         },
         scoop: ["You scooped it up 🧹✨", "Clean path again ✨", "Puck pretends nothing happened"],
         zoomies: { log: "went on a honking rampage 📢", say: "HONK HONK HONK 📢📢📢" },
         closet: {
-            foot: "Tap something to put it on him. He can wear one hat, one pair of shades and one neck thing at a time.",
-            egg: "He has to hatch before he can play dress-up 🥚",
-            takeOff: name => `He takes off the ${name} and honks at it`,
-            says: ["Looking sharp 😎", "A very dapper goose", "He's feeling himself ✨", "Menace, but make it fashion 💅"]
+            foot: "Tap something to put it on her. She can wear one hat, one pair of shades and one neck thing at a time.",
+            egg: "She has to hatch before she can play dress-up 🥚",
+            takeOff: name => `She takes off the ${name} and honks at it`,
+            says: ["Looking sharp 😎", "A very dapper goose", "She's feeling herself ✨", "Menace, but make it fashion 💅"]
         },
         diary: {
-            hatchIn: t => `Hatches in about ${t} if you keep him warm 🥚`,
+            hatchIn: t => `Hatches in about ${t} if you keep her warm 🥚`,
             growIn: t => `Grows up in ${t} 🐣`,
             counts: [["feed", "Lettuce eaten"], ["pet", "Pets"], ["bathe", "Splashes"], ["play", "Bell rings"], ["scoop", "Poops scooped"]]
         },
-        debug: { poop: "Make him poop", zoomies: "Honk rampage" }
+        debug: { poop: "Make her poop", zoomies: "Honk rampage" }
     },
 
-    // ---------- his world: the pond in the park ----------
+    // ---------- her world: the pond in the park ----------
 
     world: {
         phases: {
@@ -231,7 +231,7 @@
             rect(cx - 11, G, 22, 1, P.shadow);
             rect(cx - 8, G + 1, 16, 1, P.shadow);
 
-            // a park bench to his left
+            // a park bench to her left
             const bx = cx - 34;
             for (const y of [G - 11, G - 9]) rect(bx - 8, y, 17, 1, P.wood);
             rect(bx - 7, G - 11, 1, 6, P.woodDk); rect(bx + 7, G - 11, 1, 6, P.woodDk);
@@ -239,7 +239,7 @@
             rect(bx - 9, G - 5, 19, 1, P.woodDk);
             rect(bx - 7, G - 4, 1, 4, P.woodDk); rect(bx + 7, G - 4, 1, 4, P.woodDk);
 
-            // somebody's picnic to his right (the one he keeps raiding)
+            // somebody's picnic to her right (the one she keeps raiding)
             const px = cx + 30;
             for (let y = 0; y < 5; y++)
                 for (let x = -9; x <= 9; x++)

@@ -9,7 +9,7 @@ Tiny pixel pets live here. Pick one, hatch their egg, and look after them: feed 
 | | Pet | Lives | Loves | Their thing |
 | --- | --- | --- | --- | --- |
 | 🐧 | **[Sudo](https://valerie.wtf/sudo/)** the penguin | on the ice next to his igloo | fish 🐟, his ball | Go **fishing** for fish, junk and a rare golden fish |
-| 🪿 | **[Puck](https://valerie.wtf/puck/)** the goose | by the pond in the park | lettuce 🥬, his bell 🔔 | Help him **raid a picnic**: wait for them to look away, then snatch |
+| 🪿 | **[Puck](https://valerie.wtf/puck/)** the goose | by the pond in the park | lettuce 🥬, her bell 🔔 | Help her **raid a picnic**: wait for them to look away, then snatch |
 
 The home page shows a card for each pet with how they're doing right now, so you can see who needs you.
 
@@ -40,7 +40,7 @@ Their food, fun, cleanliness and energy go down over time, even while the tab is
 
 **Wardrobe.** Sudo has 12 accessories and Puck has 10, each in a baby size and a grown-up size. They can wear one hat, one pair of shades and one neck thing at once. The crown unlocks when they grow up.
 
-**Their worlds** follow your clock: dawn, day, dusk, and night with stars and shooting stars. It's always night while they sleep. Sudo has an aurora, falling snow, a snowman and penguins waddling past. Puck has fireflies, falling leaves, a lamp post, a bench, the picnic he keeps robbing, and ducks paddling across the pond with their ducklings.
+**Their worlds** follow your clock: dawn, day, dusk, and night with stars and shooting stars. It's always night while they sleep. Sudo has an aurora, falling snow, a snowman and penguins waddling past. Puck has fireflies, falling leaves, a lamp post, a bench, the picnic she keeps robbing, and ducks paddling across the pond with their ducklings.
 
 Every action has a little chiptune sound. The ♪ button turns them off. There are a few secrets too 👀
 

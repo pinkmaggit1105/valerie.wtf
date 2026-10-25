@@ -1,5 +1,5 @@
-"""Puck the goose: a fluffy gosling and a grown-up goose seen from the side, every mood, his egg,
-his accessories and his items."""
+"""Puck the goose: a fluffy gosling and a grown-up goose seen from the side, every mood, her egg,
+her accessories and her items."""
 from pixels import (Canvas, z_px, heart_px, sparkles, stink, bubbles, tint_face, eggs, hatch_start,
                     shell_bottom, flying_shell, common_props)
 
@@ -9,11 +9,11 @@ EGG_LOOK = dict(colors=("gooseegg", "gooseeggshade"), specks=False, grow=0.6)
 class Geo:
     """Where Puck's face and neck are, so moods and accessories land in the right spot."""
     def __init__(self, eye_x, eye_y, beak_x, beak_y, cheek, head_top, hc, face_bottom, neck, bow_x, brow):
-        self.eye_x, self.eye_y = eye_x, eye_y   # top-left of his 2x2 eye
+        self.eye_x, self.eye_y = eye_x, eye_y   # top-left of her 2x2 eye
         self.beak_x, self.beak_y = beak_x, beak_y
         self.cheek = cheek
         self.head_top = head_top
-        self.hc = hc                            # middle of his head, for hats
+        self.hc = hc                            # middle of her head, for hats
         self.face_bottom = face_bottom
         self.neck = neck                        # (first x, last x, row) for a scarf
         self.bow_x = bow_x                      # front of the neck, for a bow tie
