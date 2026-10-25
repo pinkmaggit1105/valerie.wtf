@@ -491,12 +491,12 @@ def wear(name, draw, frame_color="outline"):
 
 def tophat(c, g):
     t = g.head_top
-    for x in range(9, 24):
+    for x in range(9, 23):
         c.set(x, t + 1, "plumdk")
     for y in range(t - 4, t + 1):
-        for x in range(11, 22):
+        for x in range(11, 21):
             c.set(x, y, "plum")
-    for x in range(11, 22):
+    for x in range(11, 21):
         c.set(x, t, "beak")
     c.set(12, t - 3, "plumdk"); c.set(12, t - 2, "plumdk")
 
@@ -515,7 +515,7 @@ def beanie(c, g):
 
 def bow(c, g):
     t = g.head_top
-    x0, y0 = 20, t
+    x0, y0 = 18, t
     for (dx, dy) in ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 1)):
         c.set(x0 + dx, y0 + dy, "bow")
     for (dx, dy) in ((6, 0), (6, 1), (6, 2), (5, 0), (5, 1), (5, 2), (4, 1)):
@@ -527,24 +527,25 @@ def bow(c, g):
 def crown(c, g):
     t = g.head_top
     for y in range(t - 1, t + 2):
-        for x in range(11, 22):
+        for x in range(10, 22):
             c.set(x, y, "gold")
-    for x in (11, 13, 16, 19, 21):
+    for x in (10, 13, 15, 16, 18, 21):
         c.set(x, t - 2, "gold")
-    for x in (11, 16, 21):
+    for x in (10, 15, 16, 21):
         c.set(x, t - 3, "gold")
-    for x in range(11, 22):
+    for x in range(10, 22):
         c.set(x, t + 1, "golddk")
-    c.set(13, t, "red"); c.set(16, t, "blue"); c.set(19, t, "red")
+    c.set(12, t, "red"); c.set(15, t, "blue"); c.set(16, t, "blue"); c.set(19, t, "red")
 
 
 def shades(c, g):
     ey = g.eye_y
-    for x0 in g.eye_x:
+    for i, x0 in enumerate(g.eye_x):
+        left = x0 - 1 if i == 0 else x0
         for y in range(ey - 1, ey + 2):
-            for x in range(x0 - 1, x0 + 4):
+            for x in range(left, left + 5):
                 c.set(x, y, "eye")
-        c.set(x0, ey - 1, "white"); c.set(x0 + 1, ey, "white")
+        c.set(left + 1, ey - 1, "white"); c.set(left + 2, ey, "white")
     for x in (15, 16):
         c.set(x, ey - 1, "eye")
 
@@ -571,17 +572,17 @@ def partyhat(c, g):
     t = g.head_top
     for i, y in enumerate(range(t - 2, t + 4)):
         half = i // 2 + (1 if i == 5 else 0)
-        for x in range(18 - half, 19 + half):
+        for x in range(15 - half, 17 + half):
             c.set(x, y, "yellow" if (x + y) % 4 < 2 else "bow")
-    for x in (17, 18, 19):
+    for x in (14, 15, 16, 17):
         c.set(x, t - 3, "teal")
 
 
 def flowers(c, g):
     t = g.head_top + 1
-    for x in range(9, 24):
+    for x in range(8, 24):
         c.set(x, t, "leaf")
-    for i, x in enumerate((10, 14, 18, 22)):
+    for i, x in enumerate((9, 13, 18, 22)):
         petal = ("bow", "yellow", "blue", "bow")[i]
         for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
             c.set(x + dx, t - 1 + dy, petal)
@@ -590,17 +591,17 @@ def flowers(c, g):
 
 def headphones(c, g):
     t = g.head_top
-    for x in range(10, 23):
+    for x in range(10, 22):
         c.set(x, t - 1, "grey")
-    for (x, y) in ((8, t), (9, t), (23, t), (24, t), (7, t + 1), (25, t + 1)):
+    for (x, y) in ((8, t), (9, t), (22, t), (23, t), (7, t + 1), (24, t + 1)):
         c.set(x, y, "grey")
     for y in range(g.eye_y - 1, g.eye_y + 3):
         for x in (5, 6, 7):
             c.set(x, y, "teal")
-        for x in (25, 26, 27):
+        for x in (24, 25, 26):
             c.set(x, y, "teal")
     for y in range(t + 2, g.eye_y - 1):
-        c.set(7, y, "grey"); c.set(25, y, "grey")
+        c.set(7, y, "grey"); c.set(24, y, "grey")
 
 
 def bowtie(c, g):
@@ -613,11 +614,12 @@ def bowtie(c, g):
 
 def heartshades(c, g):
     ey = g.eye_y
-    for x0 in g.eye_x:
+    for i, x0 in enumerate(g.eye_x):
+        left = x0 - 1 if i == 0 else x0
         for (dx, dy) in ((0, 0), (1, 0), (3, 0), (4, 0), (0, 1), (1, 1), (2, 1), (3, 1), (4, 1),
                          (1, 2), (2, 2), (3, 2), (2, 3)):
-            c.set(x0 - 1 + dx, ey - 2 + dy, "red")
-        c.set(x0, ey - 2, "pink")
+            c.set(left + dx, ey - 2 + dy, "red")
+        c.set(left + 1, ey - 2, "pink")
     for x in (15, 16):
         c.set(x, ey - 1, "red")
 
