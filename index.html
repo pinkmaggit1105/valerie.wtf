@@ -75,7 +75,7 @@
 
         /* ---------- header ---------- */
 
-        .top { display: flex; align-items: center; gap: 10px; }
+        .top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
         .nameplate { flex: 1; min-width: 0; display: grid; gap: 2px; }
         .nameline { display: flex; align-items: center; gap: 10px; }
         h1 { margin: 0; font-size: 30px; line-height: 1; font-weight: 700; letter-spacing: 0.02em; text-shadow: 0 2px 0 var(--ink); }
@@ -92,7 +92,9 @@
         .mood[data-level="warn"] { border-color: var(--warn); color: var(--warn); }
         .mood[data-level="good"] { border-color: var(--good); color: var(--good); }
 
-        .buttons { display: flex; gap: 6px; }
+        .buttons { display: flex; gap: 6px; margin-left: auto; }
+        #soundBtn { min-width: 34px; }
+        #soundBtn[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; }
         .icon-btn {
             font-size: 14px;
             background: var(--panel-solid);
@@ -175,6 +177,29 @@
         #sudo { cursor: pointer; touch-action: manipulation; transition: transform 0.15s; }
         #sudo.target { transform: scale(1.06); filter: drop-shadow(0 0 10px var(--beak)); }
         #sudo:focus-visible { outline: 3px dashed var(--beak); outline-offset: 4px; }
+        .sprite-box.zoomies { animation: zoomies 0.5s steps(4) 4; }
+        @keyframes zoomies {
+            0% { transform: none; }
+            25% { transform: translate(-12%, -10%); }
+            50% { transform: scaleX(-1); }
+            75% { transform: translate(12%, -10%) scaleX(-1); }
+            100% { transform: none; }
+        }
+
+        /* poop sits on the ice at the same pixel scale as Sudo */
+        .sprite-box .poop {
+            z-index: 2;
+            inset: auto;
+            width: 50%;
+            height: 50%;
+            bottom: calc(100% / 32);
+            image-rendering: pixelated;
+            cursor: pointer;
+            -webkit-user-drag: none;
+        }
+        .sprite-box .poop[data-i="0"] { left: -26%; }
+        .sprite-box .poop[data-i="1"] { left: 76%; }
+        .sprite-box .poop[data-i="2"] { left: 6%; }
 
         .hint {
             position: relative;
@@ -207,7 +232,7 @@
 
         .tray {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: 8px;
         }
 
@@ -230,7 +255,7 @@
         .item:active { cursor: grabbing; }
         .item.dragging img { opacity: 0.25; }
         .item[aria-pressed="true"] { border-color: var(--warn); }
-        .tray.locked .item { opacity: 0.45; }
+        .tray.locked .item:not(#rodBtn) { opacity: 0.45; }
 
         .ghost {
             position: fixed;
@@ -295,6 +320,35 @@
         .acc-tile small { font-size: 11px; color: var(--muted); text-align: center; }
         .closet .empty { grid-column: 1 / -1; color: var(--muted); }
 
+        .fishing { grid-template-rows: auto auto auto; }
+        .pond {
+            position: relative;
+            height: 170px;
+            display: grid;
+            place-items: center;
+            background: repeating-linear-gradient(180deg, #2f6fc0 0 12px, #2a64b0 12px 24px);
+            border: 3px solid var(--ink);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .pond img { width: 64px; height: 64px; image-rendering: pixelated; pointer-events: none; }
+        .pond img.catch { width: 112px; height: 112px; }
+        .pond.waiting img { animation: bob 1.2s steps(2) infinite; }
+        @keyframes bob { 50% { transform: translateY(6px); } }
+        .fish-msg { margin: 0; min-height: 2.6em; text-align: center; text-wrap: balance; }
+        .cast-btn {
+            justify-self: center;
+            min-width: 180px;
+            font-size: 18px;
+            padding: 10px 18px;
+            background: var(--beak);
+            color: var(--ink);
+            border: 3px solid var(--ink);
+            cursor: pointer;
+        }
+        .cast-btn.urgent { background: var(--bad); color: var(--text); animation: shake 0.15s infinite; }
+        @keyframes shake { 50% { transform: translateX(3px); } }
+
         /* ---------- debug ---------- */
 
         .debug {
@@ -348,6 +402,7 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
+            .sprite-box.zoomies, .pond.waiting img, .cast-btn.urgent { animation: none; }
             .particle { animation-duration: 0.01s; }
             .ghost.fly { transition: none; }
             .meter i { transition: none; }
@@ -370,6 +425,7 @@
             </div>
             <div class="buttons">
                 <button class="icon-btn" id="debugBtn" type="button" hidden>Debug</button>
+                <button class="icon-btn" id="soundBtn" type="button" aria-pressed="true" aria-label="Sound is on">♪</button>
                 <button class="icon-btn" id="closetBtn" type="button">Wardrobe</button>
                 <button class="icon-btn" id="diaryBtn" type="button">Diary</button>
             </div>
@@ -384,6 +440,9 @@
                 <img class="acc" id="acc-neck" alt="" hidden>
                 <img class="acc" id="acc-face" alt="" hidden>
                 <img class="acc" id="acc-head" alt="" hidden>
+                <img class="poop" data-i="0" src="sprites/poop.png" alt="Poop. Tap to clean it up." hidden>
+                <img class="poop" data-i="1" src="sprites/poop.png" alt="Poop. Tap to clean it up." hidden>
+                <img class="poop" data-i="2" src="sprites/poop.png" alt="Poop. Tap to clean it up." hidden>
             </div>
             <p class="hint" id="hint"></p>
         </section>
@@ -392,7 +451,8 @@
             <button class="item" type="button" data-item="fish"><img src="sprites/fish.png" alt="">Fish</button>
             <button class="item" type="button" data-item="soap"><img src="sprites/soap.png" alt="">Soap</button>
             <button class="item" type="button" data-item="ball"><img src="sprites/ball.png" alt="">Ball</button>
-            <button class="item" type="button" data-item="pill"><img src="sprites/pill.png" alt="">Medicine</button>
+            <button class="item" type="button" data-item="pill"><img src="sprites/pill.png" alt="">Meds</button>
+            <button class="item" type="button" id="rodBtn"><img src="sprites/rod.png" alt="">Fish!</button>
             <button class="item" type="button" id="sleepBtn" aria-pressed="false"><img src="sprites/moon.png" alt=""><span>Sleep</span></button>
         </nav>
     </main>
@@ -413,6 +473,16 @@
         </div>
         <div class="closet" id="closetGrid"></div>
         <div class="foot">Tap something to put it on him. He can wear one hat, one pair of shades and one scarf at a time.</div>
+    </aside>
+
+    <aside class="sheet fishing" id="fishing" hidden aria-label="Fishing">
+        <div class="sheet-head">
+            <h2>Fishing hole</h2>
+            <button class="icon-btn" type="button" data-close="fishing">Close</button>
+        </div>
+        <div class="pond" id="pond"><img id="pondImg" src="sprites/rod.png" alt=""></div>
+        <p class="fish-msg" id="fishMsg" role="status" aria-live="polite"></p>
+        <button class="cast-btn" id="castBtn" type="button">Cast</button>
     </aside>
 
     <aside class="debug" id="debug" hidden aria-label="Debug tools">
@@ -467,6 +537,17 @@
             </div>
         </section>
         <section>
+            <h3>Fun stuff</h3>
+            <div class="row">
+                <button type="button" data-fun="poop">Make him poop</button>
+                <button type="button" data-fun="golden" aria-pressed="false">Golden fish next cast</button>
+                <button type="button" data-fun="quick" aria-pressed="false">Instant bites</button>
+                <button type="button" data-fun="star">Shooting star</button>
+                <button type="button" data-fun="waddler">Send a penguin</button>
+                <button type="button" data-fun="zoomies">Zoomies</button>
+            </div>
+        </section>
+        <section>
             <h3>Sky</h3>
             <div class="row" id="dbgSky">
                 <button type="button" data-sky="">Real time</button>
@@ -512,7 +593,13 @@
             { id: "bow", name: "Bow", slot: "head" },
             { id: "crown", name: "Crown", slot: "head", locked: "Unlocks when he grows up" },
             { id: "shades", name: "Shades", slot: "face" },
-            { id: "scarf", name: "Scarf", slot: "neck" }
+            { id: "scarf", name: "Scarf", slot: "neck" },
+            { id: "partyhat", name: "Party hat", slot: "head" },
+            { id: "flowers", name: "Flower crown", slot: "head" },
+            { id: "headphones", name: "Headphones", slot: "head" },
+            { id: "heartshades", name: "Heart shades", slot: "face" },
+            { id: "bowtie", name: "Bow tie", slot: "neck" },
+            { id: "fishhat", name: "Fish hat", slot: "head", locked: "Catch a golden fish to unlock" }
         ];
 
         // egg and hatching sprites are shared; everything else has a baby_ version
@@ -549,7 +636,8 @@
                 laid: now, born: now, last: now, hatched: false, asleep: false, overfedUntil: 0, grown: false,
                 egg: { warmth: 70, progress: 0 },
                 stats: { food: 70, fun: 70, clean: 90, energy: 80, health: 100 },
-                wearing: {}, counts: {}, log: []
+                poops: 0, nextPoop: 0, goldenFish: false,
+                wearing: {}, counts: {}, catches: {}, log: []
             };
         }
 
@@ -561,10 +649,59 @@
         if (sudo.hatched === undefined) sudo.hatched = true;
         sudo.egg ||= { warmth: 0, progress: 100 };
         sudo.wearing ||= {};
+        sudo.catches ||= {};
+        sudo.poops ??= 0;
+        sudo.nextPoop ??= 0;
 
         let grewUp = false;
         let justHatched = false;
-        const debug = { sky: "", unlockAll: false, snow: true };
+        let justPooped = false;
+        const debug = { sky: "", unlockAll: false, snow: true, golden: false, quick: false };
+
+        // ---------- sound: tiny chiptune blips, made on the fly ----------
+
+        const SOUNDS = {
+            chomp: [[220, .06], [180, .06], [240, .08]],
+            pet: [[660, .07], [880, .1]],
+            egg: [[440, .06, "sine"], [550, .09, "sine"]],
+            bubble: [[500, .05, "sine"], [700, .05, "sine"], [900, .07, "sine"]],
+            ball: [[392, .07], [523, .07], [659, .1]],
+            heal: [[523, .08], [659, .08], [784, .12]],
+            hatch: [[523, .1], [659, .1], [784, .1], [1047, .22]],
+            grow: [[392, .12], [523, .12], [659, .12], [784, .12], [1047, .3]],
+            splash: [[300, .05, "triangle"], [200, .09, "triangle"]],
+            bite: [[880, .05], [0, .03], [880, .05]],
+            catch: [[659, .08], [784, .08], [988, .16]],
+            fail: [[330, .1], [247, .16]],
+            poop: [[140, .12, "triangle"], [110, .16, "triangle"]],
+            clean: [[700, .05], [1000, .08]],
+            wear: [[784, .06], [1175, .1]],
+            nope: [[200, .08], [160, .1]],
+            zoomies: [[523, .04], [659, .04], [784, .04], [1047, .04], [784, .04], [1047, .04], [1319, .1]]
+        };
+
+        let muted = false;
+        try { muted = localStorage.getItem("sudo-sound") === "off"; } catch (e) {}
+        let audio = null;
+
+        function sfx(name) {
+            if (muted) return;
+            try { audio ||= new AudioContext(); } catch (e) { return; }
+            let t = audio.currentTime + 0.01;
+            for (const [freq, dur, type = "square"] of SOUNDS[name]) {
+                if (freq) {
+                    const osc = audio.createOscillator(), gain = audio.createGain();
+                    osc.type = type;
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.05, t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+                    osc.connect(gain).connect(audio.destination);
+                    osc.start(t);
+                    osc.stop(t + dur);
+                }
+                t += dur;
+            }
+        }
 
         const ageMs = () => Date.now() - sudo.born;
         const isBaby = () => ageMs() < GROW_UP_H * 36e5;
@@ -593,9 +730,20 @@
                 }
                 const s = sudo.stats;
                 for (const [k, v] of Object.entries(DECAY[sudo.asleep ? "asleep" : "awake"])) bump(k, v * h);
+                // poop left lying around makes him dirty, and a lot of it makes him ill
+                if (sudo.poops) bump("clean", -2 * sudo.poops * h);
+                if (sudo.poops >= 2) bump("health", -1 * h);
                 if (s.food < 15 || s.clean < 15) bump("health", -6 * h);
                 else if (s.food > 40 && s.clean > 40) bump("health", 3 * h);
                 if (sudo.asleep && s.energy >= 100) { sudo.asleep = false; logEvent("woke up all on his own ☀️"); }
+            }
+            if (sudo.hatched && sudo.nextPoop && now >= sudo.nextPoop && !sudo.asleep) {
+                sudo.nextPoop = 0;
+                if (sudo.poops < 3) {
+                    sudo.poops++;
+                    justPooped = true;
+                    logEvent("pooped 💩");
+                }
             }
             if (sudo.hatched && !sudo.grown && !isBaby()) {
                 sudo.grown = true;
@@ -655,7 +803,11 @@
         }
 
         function moodInfo() {
-            if (sudo.hatched) return MOODS[mood()];
+            if (sudo.hatched) {
+                const m = MOODS[mood()];
+                if (sudo.poops && !sudo.asleep && mood() !== "idle_sick") return [m[0], m[1], "Ew! He pooped. Tap the poop to clean it up 💩"];
+                return m;
+            }
             if (eggCold()) return ["Cold!", "bad", "The egg is freezing! Tap it to warm it up 🥶"];
             if (crackLevel() === 2) return ["Wiggling", "good", "It's wiggling... almost there! Keep it warm."];
             return ["Egg", "good", "Tap the egg to keep it warm. It hatches when the Hatching bar fills up."];
@@ -709,12 +861,19 @@
             if (justHatched) {
                 justHatched = false;
                 animate("hatch", 2400);
+                sfx("hatch");
                 say("🐣 SUDO HATCHED!! Say hi to your baby!", 4500);
                 setTimeout(() => burst("sparkle", 5), 1600);
             } else if (grewUp) {
                 grewUp = false;
+                sfx("grow");
                 say("✨ Sudo grew up!! He's a big penguin now 🐧", 4500);
                 burst("sparkle", 5);
+            }
+            if (justPooped) {
+                justPooped = false;
+                sfx("poop");
+                say("💩 Oops. Sudo pooped.");
             }
             if (!$("debug").hidden) syncDebug();
         }
@@ -743,6 +902,8 @@
             }
             const src = spritePath(name, frame);
             if (!sudoEl.src.endsWith(src)) sudoEl.src = src;
+
+            document.querySelectorAll(".poop").forEach((el, i) => { el.hidden = !sudo.hatched || i >= sudo.poops; });
 
             const showAcc = sudo.hatched && name !== "hatch";
             const drop = headDrop(name, frame) * world.px;
@@ -795,13 +956,16 @@
                     sudo.overfedUntil = Date.now() + 5 * 6e4;
                     bump("fun", -5);
                     logEvent("got force-fed and now has a tummy ache 🤢");
+                    sfx("nope");
                     return say("He's too full! Now he has a tummy ache 🤢");
                 }
                 bump("food", 25);
                 bump("health", 2);
                 count("feed");
                 logEvent("ate a fish 🐟");
+                digest();
                 animate("eat", 1200);
+                sfx("chomp");
                 say(pick(["Nom nom nom 🐟", "*gulp* 🐟", "Fish! His favorite! 🐟", "He ate it in one bite 🐟"]));
             },
 
@@ -809,6 +973,7 @@
                 if (!sudo.hatched) {
                     sudo.egg.warmth = clamp(sudo.egg.warmth + 12);
                     burst("heart", 2);
+                    sfx("egg");
                     return say(pick(["You cuddle the egg 🥚💕", "Something wiggles inside 👀", "Warm and cozy 🥚", "You hear a tiny peep!"]));
                 }
                 count("pet");
@@ -816,6 +981,7 @@
                 bump("fun", 10);
                 logEvent("got petted 🥰");
                 animate("pet", 1600);
+                sfx("pet");
                 burst("heart");
                 say(pick(["*happy wiggle*", "He leans into your hand 🥰", "*happy penguin noises*", "He's blushing. He's shy."]));
             },
@@ -829,6 +995,7 @@
                 logEvent("had a bath 🫧");
                 animate("bath", 2000);
                 burst("bubble", 5);
+                sfx("bubble");
                 say(wasStinky ? "FINALLY. The fly has left ✨" : "Splish splash! Squeaky clean ✨");
             },
 
@@ -843,6 +1010,7 @@
                 logEvent("played ball 🎾");
                 animate("play", 1600);
                 burst("sparkle", 2);
+                sfx("ball");
                 say(pick(["He bonked it with his head! 🎾", "BALL!!! 🎾", "He's thrilled 🎾"]));
             },
 
@@ -854,6 +1022,7 @@
                 logEvent("took his medicine 💊");
                 animate("idle_ecstatic", 1400);
                 burst("sparkle", 3);
+                sfx("heal");
                 say(sudo.stats.food < 15 || sudo.stats.clean < 15 ? "Much better! Now feed him and clean him 💊" : "Brave little guy. He feels much better 💊");
             },
 
@@ -873,9 +1042,25 @@
 
         const ITEM_ACTION = { fish: "feed", soap: "bathe", ball: "play", pill: "heal" };
 
+        // food goes in, and a few minutes later...
+        function digest() { if (!sudo.nextPoop) sudo.nextPoop = Date.now() + (3 + Math.random() * 5) * 6e4; }
+
+        function cleanPoop() {
+            if (!sudo.poops) return;
+            sudo.poops--;
+            bump("fun", 2);
+            count("scoop");
+            sfx("clean");
+            say(pick(["You scooped it up 🧹✨", "Clean ice again ✨", "Sudo looks relieved 😌"]));
+            save();
+            renderHud();
+        }
+
+        document.querySelectorAll(".poop").forEach(el => el.addEventListener("click", cleanPoop));
+
         function act(name) {
             tick();
-            if (!sudo.hatched && name !== "pet") say(STILL_AN_EGG);
+            if (!sudo.hatched && name !== "pet") { say(STILL_AN_EGG); sfx("nope"); }
             else ACTIONS[name]();
             save();
             renderHud();
@@ -973,20 +1158,59 @@
         });
 
         $("sleepBtn").addEventListener("click", () => act("sleep"));
-        sudoEl.addEventListener("click", () => act("pet"));
+        // tap him really fast and he gets the zoomies
+        let taps = [];
+        let zoomUntil = 0;
+        function zoomies() {
+            zoomUntil = Date.now() + 10000;
+            taps = [];
+            $("spriteBox").classList.remove("zoomies");
+            void $("spriteBox").offsetWidth;
+            $("spriteBox").classList.add("zoomies");
+            bump("fun", 15);
+            bump("energy", -5);
+            count("zoomies");
+            logEvent("got the zoomies 🌀");
+            sfx("zoomies");
+            say("Zoomies!!! 🌀🌀🌀");
+            save();
+            renderHud();
+        }
+        $("spriteBox").addEventListener("animationend", () => $("spriteBox").classList.remove("zoomies"));
+
+        sudoEl.addEventListener("click", () => {
+            const now = Date.now();
+            taps = taps.filter(t => now - t < 2500).concat(now);
+            if (taps.length >= 6 && now > zoomUntil && sudo.hatched && !sudo.asleep && sudo.stats.energy >= 10) return zoomies();
+            act("pet");
+        });
         sudoEl.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act("pet"); } });
 
         // ---------- sheets ----------
 
         function openSheet(id, render) {
-            for (const other of ["diary", "closet", "debug"]) if (other !== id) $(other).hidden = true;
+            for (const other of SHEETS) if (other !== id) $(other).hidden = true;
             render();
             $(id).hidden = false;
             $(id).querySelector("[data-close]").focus();
         }
 
         document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => { $(b.dataset.close).hidden = true; }));
-        document.addEventListener("keydown", e => { if (e.key === "Escape") for (const id of ["diary", "closet", "debug"]) $(id).hidden = true; });
+        const SHEETS = ["diary", "closet", "fishing", "debug"];
+        document.addEventListener("keydown", e => { if (e.key === "Escape") for (const id of SHEETS) $(id).hidden = true; });
+
+        $("soundBtn").addEventListener("click", () => {
+            muted = !muted;
+            try { localStorage.setItem("sudo-sound", muted ? "off" : "on"); } catch (e) {}
+            renderSoundBtn();
+            sfx("pet");
+        });
+        function renderSoundBtn() {
+            $("soundBtn").textContent = "♪";
+            $("soundBtn").setAttribute("aria-pressed", !muted);
+            $("soundBtn").setAttribute("aria-label", muted ? "Sound is off" : "Sound is on");
+        }
+        renderSoundBtn();
 
         // ---------- diary ----------
 
@@ -1015,15 +1239,17 @@
             let status = "";
             if (!sudo.hatched) status = `Hatches in about ${untilText((100 - sudo.egg.progress) / EGG_GROWTH)} if you keep him warm 🥚<br>`;
             else if (isBaby()) status = `Grows up in ${untilText((GROW_UP_H * 36e5 - ageMs()) / 36e5)} 🐣<br>`;
-            $("counts").innerHTML = status + `Fish eaten: ${c.feed || 0} · Pets: ${c.pet || 0} · Baths: ${c.bathe || 0} · Ball games: ${c.play || 0}<br>
-                Also on valerie.wtf: <a href="game/">Package Panic</a> · <a href="archive/terminal-v2.html">the old terminal</a>`;
+            const k = sudo.catches;
+            const caught = CATCHES.filter(x => k[x.id]).map(x => `${x.short} ${k[x.id]}`).join(" · ");
+            $("counts").innerHTML = status + `Fish eaten: ${c.feed || 0} · Pets: ${c.pet || 0} · Baths: ${c.bathe || 0} · Ball games: ${c.play || 0} · Poops scooped: ${c.scoop || 0}<br>` +
+                (caught ? `Caught: ${caught}` : `Nothing caught yet. Tap <b>Fish!</b> to go fishing 🎣`);
         }
 
         $("diaryBtn").addEventListener("click", () => openSheet("diary", renderDiary));
 
         // ---------- wardrobe ----------
 
-        const unlocked = a => !a.locked || debug.unlockAll || stage() === "adult";
+        const unlocked = a => !a.locked || debug.unlockAll || (a.id === "fishhat" ? sudo.goldenFish : stage() === "adult");
 
         function renderCloset() {
             const grid = $("closetGrid");
@@ -1047,7 +1273,7 @@
         }
 
         function wear(a) {
-            if (!unlocked(a)) return say(`${a.name}: ${a.locked.toLowerCase()} 👑`);
+            if (!unlocked(a)) { sfx("nope"); return say(`${a.name}: ${a.locked.toLowerCase()} ${a.id === "fishhat" ? "🎣" : "👑"}`); }
             if (sudo.wearing[a.slot] === a.id) {
                 delete sudo.wearing[a.slot];
                 say(`He takes off the ${a.name.toLowerCase()}`);
@@ -1055,6 +1281,7 @@
                 sudo.wearing[a.slot] = a.id;
                 logEvent(`put on the ${a.name.toLowerCase()}`);
                 say(pick(["Looking sharp 😎", "So stylish!!", "He's feeling himself ✨", "A fashion icon 💅"]));
+                sfx("wear");
                 burst("sparkle", 2);
             }
             save();
@@ -1062,6 +1289,107 @@
         }
 
         $("closetBtn").addEventListener("click", () => openSheet("closet", renderCloset));
+
+        // ---------- fishing ----------
+
+        const CATCHES = [
+            { id: "fish", name: "a fish", short: "🐟", weight: 55 },
+            { id: "bigfish", name: "a BIG fish", short: "big 🐠", weight: 18 },
+            { id: "goldfish", name: "a GOLDEN fish", short: "golden ✨", weight: 4 },
+            { id: "boot", name: "an old boot", short: "👢", weight: 10 },
+            { id: "seaweed", name: "some seaweed", short: "🌿", weight: 8 },
+            { id: "icecube", name: "an ice cube", short: "🧊", weight: 5 }
+        ];
+
+        const fishing = { phase: "idle", timer: 0 };
+
+        function setPond(phase, img, msg, button) {
+            fishing.phase = phase;
+            $("pond").classList.toggle("waiting", phase === "waiting");
+            $("pondImg").src = `sprites/${img}.png`;
+            $("pondImg").className = phase === "result" ? "catch" : "";
+            $("fishMsg").textContent = msg;
+            $("castBtn").textContent = button;
+            $("castBtn").classList.toggle("urgent", phase === "bite");
+        }
+
+        function resetPond() {
+            clearTimeout(fishing.timer);
+            setPond("idle", "rod", "Tap Cast, wait for a bite, then reel it in FAST.", "Cast");
+        }
+
+        function pondAction() {
+            clearTimeout(fishing.timer);
+            if (fishing.phase === "waiting") {
+                sfx("fail");
+                return setPond("idle", "rod", "Too early! You scared it off 🐟💨", "Cast again");
+            }
+            if (fishing.phase === "bite") return reelIn();
+            // cast
+            sfx("splash");
+            setPond("waiting", "bobber", "Waiting for a bite...", "Reel in");
+            fishing.timer = setTimeout(() => {
+                sfx("bite");
+                setPond("bite", "bobber_dip", "!!! Something's biting !!!", "REEL IN!");
+                fishing.timer = setTimeout(() => {
+                    sfx("fail");
+                    setPond("idle", "rod", "It got away... 🐟💨 Be quicker next time!", "Cast again");
+                }, 900);
+            }, debug.quick ? 300 : 1500 + Math.random() * 3500);
+        }
+
+        function rollCatch() {
+            const total = Object.values(sudo.catches).reduce((a, b) => a + b, 0);
+            if (debug.golden) { debug.golden = false; return CATCHES[2]; }
+            // a little bad luck protection for the golden fish
+            const table = CATCHES.map(c => ({ ...c, weight: c.id === "goldfish" && !sudo.goldenFish && total >= 15 ? 30 : c.weight }));
+            let r = Math.random() * table.reduce((a, c) => a + c.weight, 0);
+            return table.find(c => (r -= c.weight) < 0) || table[0];
+        }
+
+        // what happens to a fish once it's out of the water
+        function offerFood(food, fun) {
+            if (!sudo.hatched) return "Sudo hasn't hatched yet, so you let it go 🐟";
+            if (sudo.asleep) return "Sudo's asleep, so you let it swim off 🐟";
+            if (sudo.stats.food >= 92) return "He's too full, so you let it swim away 🐟";
+            bump("food", food);
+            bump("fun", fun);
+            count("feed");
+            digest();
+            animate("eat", 1200);
+            return "Sudo gobbles it up! 🐟";
+        }
+
+        function reelIn() {
+            const c = rollCatch();
+            sudo.catches[c.id] = (sudo.catches[c.id] || 0) + 1;
+            logEvent(`caught ${c.name} 🎣`);
+            let msg;
+            if (c.id === "fish") msg = offerFood(20, 0);
+            else if (c.id === "bigfish") msg = offerFood(35, 10);
+            else if (c.id === "goldfish") {
+                const first = !sudo.goldenFish;
+                sudo.goldenFish = true;
+                if (sudo.hatched) bump("fun", 30);
+                msg = first ? "You unlocked the Fish hat in the Wardrobe!! 🎩🐟" : "Another one! Sudo is in awe ✨";
+            } else {
+                if (sudo.hatched) bump("fun", 5);
+                msg = {
+                    boot: "Sudo stares at it, very confused 👢",
+                    seaweed: "Sudo wears it like a wig for a second 🌿",
+                    icecube: "It's just ice. Sudo licks it anyway 🧊"
+                }[c.id];
+            }
+            sfx("catch");
+            setPond("result", c.id, `You caught ${c.name}! ${msg}`, "Cast again");
+            save();
+            renderHud();
+        }
+
+        $("pond").addEventListener("click", pondAction);
+        $("castBtn").addEventListener("click", pondAction);
+        $("rodBtn").addEventListener("click", () => openSheet("fishing", resetPond));
+        document.querySelector('[data-close="fishing"]').addEventListener("click", () => clearTimeout(fishing.timer));
 
         // ---------- the world: a pixel-art Antarctic scene behind everything ----------
 
@@ -1075,7 +1403,33 @@
         const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
         const canvas = $("world");
         const ctx = canvas.getContext("2d");
-        const world = { px: 8, W: 0, H: 0, cx: 0, G: 0, flakes: [] };
+        const world = { px: 8, W: 0, H: 0, cx: 0, G: 0, flakes: [], waddlers: [], nextWaddler: 8000, star: null };
+
+        // little penguins that waddle past in the distance. B black, W white, Y beak and feet, G baby fluff
+        const WADDLER = {
+            adult: [".BBB.", "BWBWB", "BBYBB", "BWWWB", "BWWWB", "BWWWB"],
+            baby: [".BB.", "BWWB", "GYYG", "GGGG"],
+            feet: { adult: ["Y...Y", ".Y.Y."], baby: ["Y..Y", ".YY."] }
+        };
+        const WADDLER_COLORS = { B: "#22232e", W: "#f4f4f0", Y: "#fcc436", G: "#969cac" };
+
+        function sendWaddler() {
+            const dir = Math.random() < 0.5 ? 1 : -1;
+            const baby = Math.random() < 0.4;
+            world.waddlers.push({ x: dir > 0 ? -6 : world.W + 6, dir, baby, speed: 0.12 + Math.random() * 0.08 });
+            // sometimes a baby tags along behind a grown-up
+            if (!baby && Math.random() < 0.5) world.waddlers.push({ x: dir > 0 ? -14 : world.W + 14, dir, baby: true, speed: world.waddlers.at(-1).speed });
+        }
+
+        function drawWaddler(w) {
+            const art = WADDLER[w.baby ? "baby" : "adult"];
+            const step = Math.floor(Math.abs(w.x) * 0.8) % 2;
+            const rows = art.concat(WADDLER.feet[w.baby ? "baby" : "adult"][step]);
+            const top = world.G - rows.length - step;
+            rows.forEach((row, y) => [...row].forEach((ch, x) => {
+                if (ch !== ".") rect(Math.round(w.x) + x, top + y, 1, 1, WADDLER_COLORS[ch]);
+            }));
+        }
 
         function phase() {
             if (debug.sky) return debug.sky;
@@ -1158,6 +1512,18 @@
                 const mx = Math.round(W * 0.8), my = Math.round(G * 0.18);
                 disc(mx, my, 5, P.sun);
                 disc(mx + 3, my - 2, 4, mix(P.sky[0], P.sky[1], 0.25));
+                // shooting stars
+                if (!world.star && !reduceMotion && Math.random() < 0.008) world.star = { x: Math.random() * W * 0.7, y: Math.random() * G * 0.3, life: 0 };
+                if (world.star) {
+                    const st = world.star;
+                    for (let k = 0; k < 6; k++) {
+                        ctx.globalAlpha = 1 - k / 6;
+                        rect(Math.round(st.x - k * 2), Math.round(st.y - k), 1, 1, "#ffffff");
+                    }
+                    ctx.globalAlpha = 1;
+                    st.x += 2.4; st.y += 1.2;
+                    if (++st.life > 14) world.star = null;
+                }
             } else {
                 const low = ph !== "day";
                 disc(Math.round(low ? cx - W * 0.28 : W * 0.78), Math.round(low ? G - 10 : G * 0.22), low ? 7 : 4, P.sun);
@@ -1181,6 +1547,13 @@
                 const hn = Math.round(6 + 3 * Math.sin(wx * 0.13 + 2) + 2 * Math.sin(wx * 0.31 + 1));
                 rect(x, G - hn, 1, hn, P.near);
                 rect(x, G - hn, 1, 1, P.nearCap);
+            }
+
+            // penguins out for a walk
+            if (!reduceMotion) {
+                if (t > world.nextWaddler) { sendWaddler(); world.nextWaddler = t + 15000 + Math.random() * 25000; }
+                for (const w of world.waddlers) { w.x += w.dir * w.speed; drawWaddler(w); }
+                world.waddlers = world.waddlers.filter(w => w.x > -20 && w.x < W + 20);
             }
 
             // the ice he stands on
@@ -1216,6 +1589,16 @@
             const ripple = reduceMotion ? 0 : Math.floor(t / 600) % 4;
             rect(fx - 3 + ripple, fy, 3, 1, P.waterHi);
 
+            // a snowman keeping him company, past the fishing hole
+            const sx = cx + 46;
+            disc(sx, G - 4, 4, P.iglooLine); disc(sx - 1, G - 4, 4, P.igloo);
+            disc(sx, G - 10, 3, P.iglooLine); disc(sx - 1, G - 10, 3, P.igloo);
+            disc(sx, G - 15, 2, P.iglooLine); disc(sx - 1, G - 15, 2, P.igloo);
+            rect(sx - 2, G - 16, 1, 1, "#22232e"); rect(sx, G - 16, 1, 1, "#22232e");
+            rect(sx - 1, G - 15, 2, 1, "#f08a24");
+            rect(sx - 3, G - 19, 5, 1, "#22232e"); rect(sx - 2, G - 22, 3, 3, "#22232e");
+            for (let i = 0; i < 4; i++) { rect(sx - 4 - i, G - 11 - i, 1, 1, "#8c5834"); rect(sx + 3 + i, G - 11 - i, 1, 1, "#8c5834"); }
+
             // snow
             if (debug.snow) {
                 ctx.globalAlpha = 0.9;
@@ -1249,6 +1632,8 @@
             document.querySelectorAll("#dbgSky button").forEach(b => b.setAttribute("aria-pressed", b.dataset.sky === debug.sky));
             $("dbgUnlock").setAttribute("aria-pressed", debug.unlockAll);
             $("dbgSnow").setAttribute("aria-pressed", debug.snow);
+            document.querySelector('[data-fun="golden"]').setAttribute("aria-pressed", debug.golden);
+            document.querySelector('[data-fun="quick"]').setAttribute("aria-pressed", debug.quick);
             const [labels, values] = statSet();
             const box = $("dbgSliders");
             if (box.dataset.stage !== String(sudo.hatched)) {
@@ -1311,6 +1696,16 @@
             if (a !== "hatch" && !sudo.hatched) return say(STILL_AN_EGG);
             animate(a, { eat: 1200, pet: 1600, bath: 2000, play: 1600, hatch: 2400 }[a]);
         }));
+        const DEBUG_FUN = {
+            poop() { if (!sudo.hatched) return say(STILL_AN_EGG); sudo.nextPoop = Date.now() - 1; },
+            golden() { debug.golden = !debug.golden; },
+            quick() { debug.quick = !debug.quick; },
+            star() { world.star = { x: world.W * 0.1, y: world.G * 0.1, life: 0 }; if (phase() !== "night") say("Shooting stars only show up at night. Set the sky to Night 🌙"); },
+            waddler() { if (reduceMotion) return say("Your device asks for reduced motion, so the penguins stay home"); sendWaddler(); },
+            zoomies() { if (!sudo.hatched) return say(STILL_AN_EGG); zoomies(); }
+        };
+        document.querySelectorAll("[data-fun]").forEach(b => b.addEventListener("click", () => { DEBUG_FUN[b.dataset.fun](); tick(); save(); renderHud(); }));
+
         $("dbgUnlock").addEventListener("click", () => { debug.unlockAll = !debug.unlockAll; syncDebug(); });
         $("dbgSnow").addEventListener("click", () => { debug.snow = !debug.snow; syncDebug(); });
 

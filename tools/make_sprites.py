@@ -45,6 +45,19 @@ PAL = {
     "bowdk": (210, 70, 130, 255),
     "scarf": (226, 62, 74, 255),
     "frame": (255, 96, 178, 255),
+    "leaf": (92, 186, 84, 255),
+    "leafdk": (52, 130, 60, 255),
+    "grey": (88, 92, 110, 255),
+    "teal": (64, 200, 210, 255),
+    "bowtie": (86, 120, 240, 255),
+    "brown": (140, 88, 52, 255),
+    "browndk": (96, 58, 34, 255),
+    "orangefish": (246, 128, 64, 255),
+    "orangefishdk": (200, 80, 40, 255),
+    "ice": (200, 236, 255, 255),
+    "poop": (124, 80, 48, 255),
+    "poophi": (168, 116, 72, 255),
+    "wood": (176, 120, 70, 255),
 }
 
 
@@ -554,6 +567,82 @@ wear("shades", shades, frame_color="frame")
 wear("scarf", scarf)
 
 
+def partyhat(c, g):
+    t = g.head_top
+    for i, y in enumerate(range(t - 2, t + 4)):
+        half = i // 2 + (1 if i == 5 else 0)
+        for x in range(18 - half, 19 + half):
+            c.set(x, y, "yellow" if (x + y) % 4 < 2 else "bow")
+    for x in (17, 18, 19):
+        c.set(x, t - 3, "teal")
+
+
+def flowers(c, g):
+    t = g.head_top + 1
+    for x in range(9, 24):
+        c.set(x, t, "leaf")
+    for i, x in enumerate((10, 14, 18, 22)):
+        petal = ("bow", "yellow", "blue", "bow")[i]
+        for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+            c.set(x + dx, t - 1 + dy, petal)
+        c.set(x, t - 1, "white")
+
+
+def headphones(c, g):
+    t = g.head_top
+    for x in range(10, 23):
+        c.set(x, t - 1, "grey")
+    for (x, y) in ((8, t), (9, t), (23, t), (24, t), (7, t + 1), (25, t + 1)):
+        c.set(x, y, "grey")
+    for y in range(g.eye_y - 1, g.eye_y + 3):
+        for x in (5, 6, 7):
+            c.set(x, y, "teal")
+        for x in (25, 26, 27):
+            c.set(x, y, "teal")
+    for y in range(t + 2, g.eye_y - 1):
+        c.set(7, y, "grey"); c.set(25, y, "grey")
+
+
+def bowtie(c, g):
+    n = g.neck_y
+    for (dx, dy) in ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 1)):
+        c.set(12 + dx, n + dy, "bowtie")
+        c.set(19 - dx, n + dy, "bowtie")
+    c.set(15, n + 1, "blue"); c.set(16, n + 1, "blue")
+
+
+def heartshades(c, g):
+    ey = g.eye_y
+    for x0 in g.eye_x:
+        for (dx, dy) in ((0, 0), (1, 0), (3, 0), (4, 0), (0, 1), (1, 1), (2, 1), (3, 1), (4, 1),
+                         (1, 2), (2, 2), (3, 2), (2, 3)):
+            c.set(x0 - 1 + dx, ey - 2 + dy, "red")
+        c.set(x0, ey - 2, "pink")
+    for x in (15, 16):
+        c.set(x, ey - 1, "red")
+
+
+def fishhat(c, g):
+    t = g.head_top
+    for y in range(t - 2, t + 3):
+        for x in range(8, 21):
+            if ((x + 0.5 - 14) / 6.5) ** 2 + ((y + 0.5 - (t + 0.5)) / 2.6) ** 2 <= 1:
+                c.set(x, y, "gold" if y < t + 1 else "golddk")
+    for i in range(3):
+        for y in range(t - i, t + 1 + i):
+            c.set(21 + i, y, "golddk")
+    c.set(10, t, "eye")
+    c.set(12, t - 1, "white")
+
+
+wear("partyhat", partyhat)
+wear("flowers", flowers)
+wear("headphones", headphones)
+wear("bowtie", bowtie)
+wear("heartshades", heartshades)
+wear("fishhat", fishhat)
+
+
 # props: 16x16 items you drag onto Sudo, plus particles
 def prop(name, draw, outline=True):
     c = Canvas()
@@ -635,6 +724,101 @@ prop("ball", ball_prop)
 prop("pill", pill)
 prop("moon", moon)
 prop("bubble", bubble, outline=False)
+
+
+def recolor_fish(c, body, dark):
+    big_fish(c)
+    for (x, y), col in list(c.px.items()):
+        if col == PAL["fish"]:
+            c.set(x, y, body)
+        elif col == PAL["fishdk"]:
+            c.set(x, y, dark)
+
+
+def big_orange(c):
+    recolor_fish(c, "orangefish", "orangefishdk")
+
+
+def golden(c):
+    recolor_fish(c, "gold", "golddk")
+    for (x, y) in ((2, 2), (13, 3), (1, 13)):
+        c.set(x, y, "yellow")
+
+
+def boot(c):
+    for y in range(3, 12):
+        for x in range(5, 10):
+            c.set(x, y, "brown")
+    for y in range(9, 13):
+        for x in range(5, 14):
+            c.set(x, y, "brown")
+    for x in range(5, 14):
+        c.set(x, 13, "browndk")
+    for y in (5, 7):
+        c.set(6, y, "browndk"); c.set(8, y, "browndk")
+
+
+def seaweed(c):
+    for i, x0 in enumerate((5, 8, 11)):
+        for y in range(3 + i, 14):
+            c.set(x0 + (1 if (y + i) % 4 < 2 else 0), y, "leaf" if i != 1 else "leafdk")
+
+
+def icecube(c):
+    for y in range(5, 12):
+        for x in range(4, 12):
+            c.set(x, y, "ice")
+    for x in range(4, 12):
+        c.set(x, 5, "white")
+    c.set(5, 7, "white"); c.set(5, 8, "white")
+
+
+def rod(c):
+    for i in range(11):
+        c.set(2 + i, 13 - i, "wood")
+    for y in range(3, 12):
+        c.set(13, y, "shade")
+    c.set(13, 12, "red"); c.set(13, 13, "white")
+
+
+def bobber(c):
+    for y in range(5, 12):
+        for x in range(5, 11):
+            if (x - 7.5) ** 2 + (y - 8.5) ** 2 <= 10:
+                c.set(x, y, "red" if y < 9 else "white")
+    c.set(8, 4, "outline"); c.set(8, 3, "outline")
+    c.set(6, 6, "white")
+
+
+def bobber_dip(c):
+    for y in range(9, 13):
+        for x in range(5, 11):
+            if (x - 7.5) ** 2 + (y - 11) ** 2 <= 8:
+                c.set(x, y, "red" if y < 11 else "white")
+    for (x, y) in ((3, 8), (2, 6), (12, 8), (13, 6), (4, 5), (11, 5)):
+        c.set(x, y, "blue")
+
+
+def poop(c):
+    for (y, x0, x1, col) in ((14, 3, 12, "poop"), (13, 3, 12, "poop"), (12, 4, 11, "poop"), (11, 5, 10, "poop"),
+                             (10, 5, 10, "poop"), (9, 6, 9, "poop"), (8, 7, 8, "poop")):
+        for x in range(x0, x1 + 1):
+            c.set(x, y, col)
+    for (x, y) in ((6, 12), (7, 10), (8, 9), (5, 13)):
+        c.set(x, y, "poophi")
+    c.set(6, 11, "white"); c.set(9, 11, "white")
+    c.set(7, 13, "eye"); c.set(8, 13, "eye")
+
+
+prop("bigfish", big_orange)
+prop("goldfish", golden)
+prop("boot", boot)
+prop("seaweed", seaweed)
+prop("icecube", icecube)
+prop("rod", rod)
+prop("bobber", bobber)
+prop("bobber_dip", bobber_dip)
+prop("poop", poop)
 prop("sparkle", sparkle, outline=False)
 
 # ---------- preview sheet ----------
