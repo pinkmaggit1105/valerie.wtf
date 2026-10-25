@@ -575,6 +575,7 @@
                 print("  `about <manager>`      everything about apt, pacman, flatpak, yay...");
                 print("  `quiz`                 test yourself 🧠");
                 print("  `game`                 play Package Panic 🎮");
+                print("  `pet`                  visit Sudo the penguin 🐧");
                 print("  `neofetch`, `whoami`, `uname`, `date`, `cowsay`, `contact`, `history`, `clear`\n");
                 print("or just type a real command like `sudo apt install firefox` and I'll explain it.");
                 print("[dim]there are also a LOT of secrets hidden in here 👀[/]");
@@ -700,7 +701,7 @@
             },
 
             sudo(args) {
-                if (!args.length) print("usage: sudo <command>");
+                if (!args.length) print("usage: sudo <command>\n[dim]looking for Sudo the penguin? type `pet` 🐧[/]");
                 else if (args[0] === "su" || args[0] === "-i") print("[red]nice try.[/] root access denied 🙂");
                 else if (COMMANDS[args[0]] && args[0] !== "sudo") COMMANDS[args[0]](args.slice(1));
                 else print(`[red]sudo: ${args[0]}: command not found[/]`);
@@ -724,6 +725,13 @@
             },
 
             play() { COMMANDS.game(); },
+
+            pet() {
+                print("🐧 waddling over to [green]Sudo's igloo[/]... go say hi!");
+                setTimeout(() => { location.href = "pet/"; }, 700);
+            },
+
+            penguin() { COMMANDS.pet(); },
 
             fortune() {
                 const f = [

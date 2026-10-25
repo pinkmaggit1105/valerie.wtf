@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sudo the Penguin</title>
+    <meta name="description" content="Look after Sudo, a tiny pixel penguin who lives in a terminal. Feed him, pet him, give him baths.">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --panel: #0c0c0c;
+            --bar: #2b2b2b;
+            --fg: #cccccc;
+            --dim: #767676;
+            --green: #4ae24a;
+            --blue: #6b9bff;
+            --yellow: #e5c07b;
+            --red: #f14c4c;
+            --purple: #c678dd;
+            --cyan: #56d4dd;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: "Ubuntu Mono", "DejaVu Sans Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 15px;
+        }
+
+        body {
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .window {
+            width: 100%;
+            max-width: 920px;
+            height: min(720px, calc(100vh - 32px));
+            height: min(720px, calc(100dvh - 32px));
+            display: flex;
+            flex-direction: column;
+            background: var(--panel);
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        .titlebar {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 14px;
+            background: var(--bar);
+            color: #bbbbbb;
+            font-size: 13px;
+            user-select: none;
+        }
+
+        .dots { position: absolute; left: 14px; display: flex; gap: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.r { background: #ff5f57; }
+        .dot.y { background: #febc2e; }
+        .dot.g { background: #28c840; }
+
+        .igloo {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 14px 18px;
+            border-bottom: 1px solid #3a3a3a;
+            background: #08080c;
+        }
+
+        #sprite {
+            width: 192px;
+            height: 192px;
+            flex-shrink: 0;
+            image-rendering: pixelated;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .info { flex: 1; min-width: 0; white-space: pre; overflow: hidden; line-height: 1.45; }
+        .info .name { font-size: 18px; font-weight: bold; }
+
+        #screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            line-height: 1.45;
+            cursor: text;
+        }
+
+        .line { white-space: pre-wrap; word-break: break-word; min-height: 1.45em; }
+
+        .inputline { display: flex; gap: 8px; }
+        .inputline .prompt { flex-shrink: 0; }
+
+        #cmd {
+            flex: 1;
+            min-width: 0;
+            background: transparent;
+            border: 0;
+            outline: 0;
+            color: var(--fg);
+            font: inherit;
+            caret-color: var(--fg);
+            padding: 0;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px 14px;
+            border-top: 1px solid #3a3a3a;
+            background: var(--bar);
+        }
+
+        .chips button {
+            font: inherit;
+            font-size: 13px;
+            color: var(--fg);
+            background: #1a1a1a;
+            border: 1px solid #444444;
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+        }
+
+        .chips button:hover { border-color: var(--green); color: var(--green); }
+
+        a { color: var(--blue); }
+        .cyan { color: var(--cyan); }
+        .pu { color: var(--green); font-weight: bold; }
+        .pp { color: var(--blue); font-weight: bold; }
+        .green { color: var(--green); }
+        .blue { color: var(--blue); }
+        .yellow { color: var(--yellow); }
+        .red { color: var(--red); }
+        .purple { color: var(--purple); }
+        .dim { color: var(--dim); }
+        .bold { font-weight: bold; }
+
+        @media (max-width: 600px) {
+            html, body { font-size: 13px; }
+            body { padding: 0; }
+            .window { height: 100vh; height: 100dvh; border-radius: 0; border: 0; }
+            .igloo { gap: 12px; padding: 10px 12px; }
+            #sprite { width: 112px; height: 112px; }
+            .info { font-size: 12px; }
+            .info .name { font-size: 15px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="window">
+        <div class="titlebar">
+            <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+            <span>you@igloo: ~ (sudo.service)</span>
+        </div>
+        <div class="igloo">
+            <img id="sprite" src="sprites/idle_happy_1.png" alt="Sudo the penguin" title="click to pet">
+            <div class="info" id="info"></div>
+        </div>
+        <div id="screen">
+            <div id="output"></div>
+            <div class="inputline">
+                <span class="prompt" id="prompt"></span>
+                <input id="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="terminal input">
+            </div>
+        </div>
+        <div class="chips">
+            <button data-cmd="feed">🐟 feed</button>
+            <button data-cmd="pet">🥰 pet</button>
+            <button data-cmd="bathe">🫧 bathe</button>
+            <button data-cmd="play">🎾 play</button>
+            <button data-cmd="sleep">😴 sleep</button>
+            <button data-cmd="heal">💊 heal</button>
+            <button data-cmd="status">status</button>
+            <button data-cmd="help">help</button>
+        </div>
+    </div>
+
+    <script>
+        const out = document.getElementById("output");
+        const input = document.getElementById("cmd");
+        const screen = document.getElementById("screen");
+        const spriteEl = document.getElementById("sprite");
+        const infoEl = document.getElementById("info");
+        document.getElementById("prompt").innerHTML = '<span class="pu">you@igloo</span>:<span class="pp">~</span>$';
+
+        // ---------- output helpers (same tiny markup as the terminal) ----------
+
+        const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+        function fmt(s) {
+            return esc(s)
+                .replace(/\[(\w+)\]([\s\S]*?)\[\/\]/g, '<span class="$1">$2</span>')
+                .replace(/`([^`]+)`/g, '<span class="blue">$1</span>');
+        }
+
+        function print(s = "", plain = "") {
+            const div = document.createElement("div");
+            div.className = "line";
+            div.innerHTML = fmt(s) + esc(plain);
+            out.appendChild(div);
+            return div;
+        }
+
+        function scrollDown() { screen.scrollTop = screen.scrollHeight; }
+
+        // ---------- sprites ----------
+
+        const FRAMES = {
+            idle_happy: 2, idle_neutral: 2, idle_hungry: 2, idle_sad: 2, idle_stinky: 2, idle_sleepy: 2,
+            idle_sick: 2, idle_overfed: 2, idle_ecstatic: 2, blink: 1, pet: 2, eat: 3, bath: 2, play: 2, sleep: 2
+        };
+        for (const [name, n] of Object.entries(FRAMES))
+            for (let i = 1; i <= n; i++) new Image().src = `sprites/${name}_${i}.png`;
+
+        // ---------- state ----------
+
+        const STATS = {
+            food:   { label: "food",   icon: "🐟" },
+            fun:    { label: "fun",    icon: "🎾" },
+            clean:  { label: "clean",  icon: "🫧" },
+            energy: { label: "energy", icon: "🔋" },
+            health: { label: "health", icon: "❤️" }
+        };
+
+        // per-hour changes. a full tummy lasts about half a day.
+        const DECAY = {
+            awake:  { food: -6, fun: -5, clean: -3, energy: -4 },
+            asleep: { food: -3, fun: -1, clean: -1, energy: 20 }
+        };
+
+        const MAX_CATCHUP_H = 24 * 14;
+        const SAVE_KEY = "sudo-pet";
+
+        function freshPenguin() {
+            const now = Date.now();
+            return {
+                born: now, last: now, asleep: false, overfedUntil: 0,
+                stats: { food: 70, fun: 70, clean: 90, energy: 80, health: 100 },
+                counts: {}, log: []
+            };
+        }
+
+        let sudo = null;
+        let isNew = false;
+        try { sudo = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) {}
+        if (!sudo || !sudo.stats) { sudo = freshPenguin(); isNew = true; }
+
+        function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(sudo)); } catch (e) {} }
+
+        const clamp = v => Math.max(0, Math.min(100, v));
+
+        function bump(stat, by) { sudo.stats[stat] = clamp(sudo.stats[stat] + by); }
+
+        // Advance time in small steps so health reacts to stats crossing thresholds mid-absence.
+        function tick() {
+            const now = Date.now();
+            let hours = Math.min((now - sudo.last) / 36e5, MAX_CATCHUP_H);
+            sudo.last = now;
+            while (hours > 0) {
+                const h = Math.min(hours, 0.25);
+                hours -= h;
+                const s = sudo.stats;
+                for (const [k, v] of Object.entries(DECAY[sudo.asleep ? "asleep" : "awake"])) bump(k, v * h);
+                if (s.food < 15 || s.clean < 15) bump("health", -6 * h);
+                else if (s.food > 40 && s.clean > 40) bump("health", 3 * h);
+                if (sudo.asleep && s.energy >= 100) { sudo.asleep = false; logEvent("woke up all on his own ☀️"); }
+            }
+            save();
+        }
+
+        function logEvent(msg) {
+            sudo.log.push({ t: Date.now(), msg });
+            if (sudo.log.length > 50) sudo.log.shift();
+        }
+
+        function count(action) { sudo.counts[action] = (sudo.counts[action] || 0) + 1; }
+
+        // ---------- mood ----------
+
+        const MOODS = {
+            sleep:         "zzz... 💤",
+            idle_sick:     "SICK 🤒 needs `heal`",
+            idle_overfed:  "tummy ache 🤢 (too many fish)",
+            idle_hungry:   "STARVING 🥺",
+            idle_stinky:   "stinky 🪰",
+            idle_sleepy:   "eepy 🥱",
+            idle_sad:      "sad 😢",
+            idle_ecstatic: "living his best life ✨",
+            idle_happy:    "vibing 😊",
+            idle_neutral:  "just existing"
+        };
+
+        function mood() {
+            const s = sudo.stats;
+            if (sudo.asleep) return "sleep";
+            if (s.health < 40) return "idle_sick";
+            if (Date.now() < sudo.overfedUntil) return "idle_overfed";
+            if (s.food < 30) return "idle_hungry";
+            if (s.clean < 30) return "idle_stinky";
+            if (s.energy < 20) return "idle_sleepy";
+            if (s.fun < 30) return "idle_sad";
+            if (Object.values(s).every(v => v >= 80)) return "idle_ecstatic";
+            if (s.fun >= 55) return "idle_happy";
+            return "idle_neutral";
+        }
+
+        // ---------- rendering ----------
+
+        let anim = null;
+        let blinkUntil = 0;
+
+        function animate(name, ms = 1600) { anim = { name, start: Date.now(), until: Date.now() + ms }; }
+
+        function bar(v, width = 10) {
+            const filled = Math.round(v / 100 * width);
+            const color = v < 30 ? "red" : v < 60 ? "yellow" : "green";
+            return `[${color}]${"█".repeat(filled)}[/][dim]${"░".repeat(width - filled)}[/]`;
+        }
+
+        function age() {
+            const mins = Math.floor((Date.now() - sudo.born) / 6e4);
+            const d = Math.floor(mins / 1440), h = Math.floor(mins / 60) % 24, m = mins % 60;
+            return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`;
+        }
+
+        function renderInfo() {
+            const lines = [`[name]Sudo[/] [dim]the penguin 🐧 · age ${age()}[/]`, MOODS[mood()], ""];
+            for (const [k, st] of Object.entries(STATS))
+                lines.push(`${st.icon} ${st.label.padEnd(7)}${bar(sudo.stats[k])} ${String(Math.round(sudo.stats[k])).padStart(3)}%`);
+            infoEl.innerHTML = fmt(lines.join("\n"));
+        }
+
+        function renderSprite() {
+            const now = Date.now();
+            let name, frame;
+            if (anim && now < anim.until) {
+                name = anim.name;
+                frame = Math.floor((now - anim.start) / 400) % FRAMES[name];
+            } else {
+                anim = null;
+                name = mood();
+                frame = Math.floor(now / 700) % FRAMES[name];
+                const canBlink = !["sleep", "idle_overfed", "idle_sick"].includes(name);
+                if (canBlink && now > blinkUntil + 2500 && Math.random() < 0.02) blinkUntil = now + 160;
+                if (canBlink && now < blinkUntil) { name = "blink"; frame = 0; }
+            }
+            const src = `sprites/${name}_${frame + 1}.png`;
+            if (!spriteEl.src.endsWith(src)) spriteEl.src = src;
+        }
+
+        // ---------- care ----------
+
+        const ACTIONS = {
+            feed() {
+                if (sudo.asleep) { print("shhh he's sleeping 😴 [dim](`wake` him if you're a monster)[/]"); return; }
+                if (sudo.stats.food >= 92) {
+                    sudo.overfedUntil = Date.now() + 5 * 6e4;
+                    bump("fun", -5);
+                    logEvent("got force-fed and now has a tummy ache 🤢");
+                    print("🐟 you shove ANOTHER fish in... [red]Sudo is too full![/] he has a tummy ache now 🤢");
+                    print("[dim]check his food bar before feeding. give him a few minutes to recover.[/]");
+                    return;
+                }
+                bump("food", 25);
+                bump("health", 2);
+                count("feed");
+                logEvent("ate a fish 🐟");
+                animate("eat", 1200);
+                print(`🐟 nom nom nom. Sudo ate a fish! [dim](fish eaten all time: ${sudo.counts.feed})[/]`);
+            },
+
+            pet() {
+                count("pet");
+                if (sudo.asleep) { bump("fun", 3); print("🥹 he smiles in his sleep"); return; }
+                bump("fun", 10);
+                logEvent("got petted 🥰");
+                animate("pet", 1600);
+                print(["🥰 Sudo does a happy little wiggle", "🥰 he leans into your hand", "🥰 *happy penguin noises*", "🥰 he's blushing. stop. he's shy."][Math.floor(Math.random() * 4)]);
+            },
+
+            bathe() {
+                if (sudo.asleep) { print("you can't bathe a sleeping penguin. that's just drowning him 😭"); return; }
+                const wasStinky = sudo.stats.clean < 30;
+                sudo.stats.clean = 100;
+                bump("fun", 5);
+                count("bathe");
+                logEvent("had a bath 🫧");
+                animate("bath", 2000);
+                print(wasStinky ? "🫧 FINALLY. the fly has left. Sudo is squeaky clean ✨" : "🫧 splish splash! Sudo is squeaky clean ✨ [dim](penguins LOVE water)[/]");
+            },
+
+            play() {
+                if (sudo.asleep) { print("he's asleep 😴 play with him when he wakes up"); return; }
+                if (sudo.stats.energy < 15) { print("Sudo is too tired to play 🥱 put him to bed with `sleep`"); return; }
+                if (sudo.stats.health < 40) { print("Sudo is too sick to play 🤒 try `heal` first"); return; }
+                bump("fun", 20);
+                bump("energy", -12);
+                bump("food", -5);
+                count("play");
+                logEvent("played ball 🎾");
+                animate("play", 1600);
+                print("🎾 you toss the ball and Sudo bonks it with his head. he's thrilled.");
+            },
+
+            sleep() {
+                if (sudo.asleep) { print("he's already asleep 💤"); return; }
+                if (sudo.stats.energy > 80) { print("Sudo refuses. he is NOT tired. he is a baby with infinite energy 😤 [dim](try again when his energy is lower)[/]"); return; }
+                sudo.asleep = true;
+                logEvent("went to sleep 💤");
+                print("😴 you tuck Sudo in. goodnight little guy 🌙 [dim](he wakes up on his own when his energy is full, or `wake` him)[/]");
+            },
+
+            wake() {
+                if (!sudo.asleep) { print("he's already awake 👀"); return; }
+                sudo.asleep = false;
+                bump("fun", -10);
+                logEvent("got woken up 😠");
+                print("☀️ you wake Sudo up. he is [red]grumpy[/] about it.");
+            },
+
+            heal() {
+                if (sudo.stats.health >= 70) { print("Sudo is healthy! no medicine needed 💚 [dim](medicine is for when he's sick)[/]"); return; }
+                bump("health", 40);
+                count("heal");
+                logEvent("took his medicine 💊");
+                animate("idle_ecstatic", 1400);
+                print("💊 Sudo takes his medicine like a brave little guy. he feels a lot better!");
+                if (sudo.stats.food < 15 || sudo.stats.clean < 15) print("[dim]he'll get sick again unless he's fed and clean though 👀[/]");
+            }
+        };
+
+        const ALIASES = { bath: "bathe", shower: "bathe", wash: "bathe", clean: "bathe", eat: "feed", fish: "feed", pat: "pet", cuddle: "pet", hug: "pet", ball: "play", nap: "sleep", bed: "sleep", medicine: "heal", meds: "heal" };
+
+        // ---------- commands ----------
+
+        function status() {
+            print(`[bold]Sudo[/] the penguin 🐧  age [cyan]${age()}[/]  mood: ${MOODS[mood()]}`);
+            for (const [k, st] of Object.entries(STATS))
+                print(`  ${st.icon} ${st.label.padEnd(7)} ${bar(sudo.stats[k], 20)} ${Math.round(sudo.stats[k])}%`);
+            const c = sudo.counts;
+            print(`[dim]  fed ${c.feed || 0}× · petted ${c.pet || 0}× · bathed ${c.bathe || 0}× · played ${c.play || 0}×[/]`);
+        }
+
+        function systemctl(args) {
+            const [verb, unit] = args;
+            if (!unit || !/^sudo(\.service)?$/.test(unit)) { print("usage: `systemctl status sudo`"); return; }
+            if (verb === "status") {
+                const awake = !sudo.asleep;
+                print(`[${sudo.stats.health < 40 ? "red" : "green"}]●[/] sudo.service - Sudo the penguin`);
+                print("     Loaded: loaded (/etc/systemd/system/sudo.service; [green]enabled[/]; preset: fluffy)");
+                print(`     Active: [${awake ? "green" : "yellow"}]${awake ? "active (vibing)" : "inactive (sleeping)"}[/] for ${age()}`);
+                print(`     Memory: 1 fish brain, ${Math.round(sudo.stats.food)}% full`);
+                for (const e of sudo.log.slice(-3)) print(`[dim]${stamp(e.t)} igloo sudo[1]: ${e.msg}[/]`);
+            } else if (["stop", "kill", "disable", "mask"].includes(verb)) {
+                print("[red]Failed to " + verb + " sudo.service: Access denied.[/] he is a BABY 😭");
+            } else if (verb === "restart") {
+                print("you can't restart a penguin. try `sleep` 💤");
+            } else if (verb === "start") {
+                ACTIONS.wake();
+            } else {
+                print(`systemctl: ${verb} isn't something you can do to a penguin`);
+            }
+        }
+
+        function stamp(t) {
+            const d = new Date(t);
+            return d.toLocaleString("en-US", { month: "short", day: "2-digit" }) + " " + d.toTimeString().slice(0, 5);
+        }
+
+        function journal() {
+            if (!sudo.log.length) { print("-- No entries --"); return; }
+            print(`[dim]-- Logs begin at ${stamp(sudo.born)} --[/]`);
+            for (const e of sudo.log.slice(-15)) print(`[dim]${stamp(e.t)}[/] igloo sudo[1]: ${e.msg}`);
+        }
+
+        const COMMANDS = {
+            help() {
+                print("[green]Sudo the penguin[/] lives here now. look after him 🐧💚\n");
+                print("  `feed`      give him a fish 🐟 (don't overdo it)");
+                print("  `pet`       pat his little head 🥰 (or click him)");
+                print("  `bathe`     bath time 🫧");
+                print("  `play`      play ball 🎾 (uses energy)");
+                print("  `sleep`     put him to bed 😴   `wake` if you're mean");
+                print("  `heal`      medicine 💊 (only when he's sick)");
+                print("  `status`    how he's doing");
+                print("  `journalctl -u sudo`    his diary");
+                print("  `exit`      back to the terminal\n");
+                print("[dim]his stats go down over time, even when you close the tab. come back and check on him!\nif he goes hungry or stinky for too long he gets sick 🤒[/]");
+            },
+            status,
+            systemctl,
+            journalctl() { journal(); },
+            log() { journal(); },
+            clear() { out.innerHTML = ""; },
+            exit() { print("bye Sudo 👋"); setTimeout(() => { location.href = "../"; }, 500); },
+            quit() { COMMANDS.exit(); },
+            whoami() { print("his favorite human 🥹"); },
+            ls() { print("[blue]igloo[/]  fish.png  ball.png  [dim]definitely-not-a-tiny-hat.png[/]"); },
+            cd(args) { if (args[0] === "..") COMMANDS.exit(); else print("there's nowhere else to go. it's just you and the penguin."); },
+            rm(args) { if (args.some(a => /sudo/.test(a))) print("[red]rm: cannot remove 'sudo': he is a living creature[/] 😭"); else print("rm: nice try"); },
+            kill(args) { if (args.some(a => /sudo/.test(a))) print("[red]kill: (1) - Operation not permitted.[/] how DARE you. he's a baby."); else print("usage: kill <pid>"); },
+            pkill(args) { COMMANDS.kill(args); },
+            killall(args) { COMMANDS.kill(args); },
+            echo(args) { print("", args.join(" ")); },
+            date() { print(new Date().toString()); }
+        };
+
+        function run(line) {
+            print('[pu]you@igloo[/]:[pp]~[/]$ ', line);
+            tick();
+            let words = line.trim().toLowerCase().split(/\s+/).filter(Boolean);
+            if (!words.length) return;
+
+            if (words[0] === "sudo") {
+                if (words.length === 1) { print("that's him! 🐧 well, his name. try `pet`"); return; }
+                if (words[1] === "sudo") { print("sudo sudo sudo 🐧🐧🐧 [dim](he heard his name and waddled over)[/]"); return; }
+                words = words.slice(1);
+            }
+
+            const [name, ...args] = words;
+            if (/^(apt|apt-get|pacman|dnf|yum|zypper|apk|emerge|yay|paru|flatpak|snap|brew)$/.test(name)) {
+                print("💀 Sudo does not need a package manager. Sudo needs FOOD. [dim](try `feed`)[/]");
+                return;
+            }
+
+            const action = ACTIONS[ALIASES[name] || name];
+            if (action) { action(args); save(); renderInfo(); return; }
+
+            const cmd = COMMANDS[name];
+            if (cmd) { cmd(args); return; }
+
+            print(`[red]${name}: command not found[/]. type \`help\`.`);
+        }
+
+        // ---------- input ----------
+
+        const history = [];
+        let histIdx = 0;
+        const COMPLETIONS = [...Object.keys(ACTIONS), ...Object.keys(COMMANDS), "journalctl -u sudo", "systemctl status sudo"];
+
+        input.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+                const v = input.value;
+                input.value = "";
+                if (v.trim()) history.push(v);
+                histIdx = history.length;
+                run(v);
+                scrollDown();
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                if (histIdx > 0) input.value = history[--histIdx];
+            } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                histIdx = Math.min(history.length, histIdx + 1);
+                input.value = history[histIdx] || "";
+            } else if (e.key === "Tab") {
+                e.preventDefault();
+                const v = input.value.toLowerCase();
+                const hits = COMPLETIONS.filter(c => c.startsWith(v));
+                if (hits.length === 1) input.value = hits[0] + " ";
+                else if (hits.length > 1) { print(`[dim]${hits.join("  ")}[/]`); scrollDown(); }
+            } else if (e.key === "l" && e.ctrlKey) {
+                e.preventDefault();
+                COMMANDS.clear();
+            }
+        });
+
+        screen.addEventListener("click", () => { if (!window.getSelection().toString()) input.focus(); });
+        spriteEl.addEventListener("click", () => { run("pet"); scrollDown(); });
+
+        document.querySelectorAll(".chips button").forEach(b => b.addEventListener("click", () => {
+            run(b.dataset.cmd);
+            scrollDown();
+            input.focus();
+        }));
+
+        // ---------- boot ----------
+
+        tick();
+        print("[green]  _____ _   _ ____   ___  [/]");
+        print("[green] / ____| | | |  _ \\ / _ \\ [/]");
+        print("[green] \\___ \\| | | | | | | | | |[/]");
+        print("[green]  ___) | |_| | |_| | |_| |[/]");
+        print("[green] |____/ \\___/|____/ \\___/ [/]  [dim]the penguin[/]");
+        print();
+        if (isNew) {
+            logEvent("hatched! 🐣");
+            save();
+            print("🐣 [bold]Sudo has hatched![/] he's a tiny penguin and he's yours now.");
+            print("say hi with `pet`, or type `help` to see how to look after him.\n");
+        } else {
+            print(`[dim]welcome back! Sudo is ${age()} old.[/] mood: ${MOODS[mood()]}`);
+            const s = sudo.stats;
+            if (s.health < 40) print("[red]he's sick 🤒 give him `heal`, then feed him and give him a bath.[/]");
+            else if (s.food < 30) print("[yellow]he's hungry! `feed` him 🐟[/]");
+            else if (s.clean < 30) print("[yellow]he's stinky! time for a `bathe` 🫧[/]");
+            print("[dim]type `help` for commands.[/]\n");
+        }
+
+        renderInfo();
+        renderSprite();
+        setInterval(renderSprite, 100);
+        setInterval(() => { tick(); renderInfo(); }, 10000);
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); renderInfo(); } });
+        input.focus();
+    </script>
+
+</body>
+
+</html>

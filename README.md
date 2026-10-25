@@ -43,6 +43,7 @@ It also covers **Flatpak** and **Snap**, which work on any distro (except Snap o
 | `about <manager>` | Everything about one package manager |
 | `quiz` | Test yourself (`hint`, `skip`, `quit`) |
 | `game` | Play Package Panic |
+| `pet` | Visit Sudo the penguin |
 | `contact` | How to reach me |
 
 Tasks: `refresh`, `upgrade`, `install`, `remove`, `search`, `info`, `list`, `orphans`, `clean`.
@@ -55,13 +56,22 @@ There are LOTS of easter eggs hidden in there too, like `neofetch`, `cowsay` and
 
 A typing game at [valerie.wtf/game](https://valerie.wtf/game). Package requests like "Arch: install git" fall from the top, and you type the right command (`sudo pacman -S git`) before they hit the floor. Combos multiply your score, it gets faster the longer you last, and every miss shows you the right answer. Pick `easy` (Mint, Ubuntu, Debian, Arch, Manjaro, Fedora and four tasks) or `hard` (every distro, every task).
 
+## Sudo the penguin 🐧
+
+A tiny pixel penguin who lives at [valerie.wtf/pet](https://valerie.wtf/pet). Look after him with terminal commands: `feed`, `pet`, `bathe`, `play`, `sleep` and `heal` (or click him to pet him). His food, fun, cleanliness and energy go down over time, even while the tab is closed, and if he's left hungry or stinky for too long he gets sick. Don't overfeed him either, he gets a tummy ache 🤢
+
+Check on him with `status`, `systemctl status sudo`, or read his diary with `journalctl -u sudo`.
+
+For now Sudo lives in your browser (`localStorage`), so everyone has their own Sudo. A shared, everyone-raises-him-together version is the plan for later.
+
 ## How it's built
 
 Each page is a single HTML file with plain HTML, CSS and JavaScript: no frameworks, no build step, no dependencies. It's hosted on GitHub Pages with the custom domain set in `CNAME`.
 
 - `index.html`: the terminal
 - `game/index.html`: Package Panic
-- `archive/`: snapshots of older versions of the site, like `terminal-v1.html`
+- `pet/index.html`: Sudo the penguin, with his sprites in `pet/sprites/`. They're drawn by `pet/make_sprites.py` (needs Pillow: `python3 pet/make_sprites.py pet/sprites preview.png`), so a new sprite is a few lines of Python
+- `archive/`: snapshots of older versions of the site, like `terminal-v1.html`, `terminal-v2.html` and `package-panic-v1.html`
 
 To run it locally, just open `index.html` in a browser.
 
