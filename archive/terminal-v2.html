@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>valerie.wtf terminal</title>
+    <meta name="description" content="An interactive terminal for learning package manager commands across Linux distros.">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --panel: #0c0c0c;
+            --bar: #2b2b2b;
+            --fg: #cccccc;
+            --dim: #767676;
+            --green: #4ae24a;
+            --blue: #6b9bff;
+            --yellow: #e5c07b;
+            --red: #f14c4c;
+            --purple: #c678dd;
+            --cyan: #56d4dd;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: "Ubuntu Mono", "DejaVu Sans Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 15px;
+        }
+
+        body {
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .window {
+            width: 100%;
+            max-width: 920px;
+            height: min(720px, calc(100vh - 32px));
+            height: min(720px, calc(100dvh - 32px));
+            display: flex;
+            flex-direction: column;
+            background: var(--panel);
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        .titlebar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: var(--bar);
+            color: #bbbbbb;
+            font-size: 13px;
+            justify-content: center;
+            position: relative;
+            user-select: none;
+        }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.r { background: #ff5f57; }
+        .dot.y { background: #febc2e; }
+        .dot.g { background: #28c840; }
+        .dots { position: absolute; left: 14px; display: flex; gap: 8px; }
+        .titlebar span { max-width: calc(100% - 100px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        #screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 16px;
+            line-height: 1.5;
+            cursor: text;
+        }
+
+        .line { white-space: pre-wrap; overflow-wrap: anywhere; }
+        /* the ascii banner is 52 columns wide: shrink it to fit instead of wrapping */
+        .line.banner { white-space: pre; overflow-wrap: normal; font-size: min(1em, calc((100vw - 40px) / 32)); line-height: 1.2; }
+
+        .inputline { display: flex; gap: 8px; }
+        .inputline .prompt { flex-shrink: 0; }
+
+        #cmd {
+            flex: 1;
+            min-width: 0;
+            background: transparent;
+            border: 0;
+            outline: 0;
+            color: var(--fg);
+            font: inherit;
+            caret-color: var(--fg);
+            padding: 0;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px 14px;
+            border-top: 1px solid #3a3a3a;
+            background: var(--bar);
+        }
+
+        .chips button {
+            font: inherit;
+            font-size: 13px;
+            color: var(--fg);
+            background: #1a1a1a;
+            border: 1px solid #444444;
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+        }
+
+        .chips button:hover { border-color: var(--green); color: var(--green); }
+
+        .cyan { color: var(--cyan); }
+        .pu { color: var(--green); font-weight: bold; }
+        .pp { color: var(--blue); font-weight: bold; }
+        .pb { color: var(--yellow); font-weight: bold; }
+        .green { color: var(--green); }
+        .blue { color: var(--blue); }
+        .yellow { color: var(--yellow); }
+        .red { color: var(--red); }
+        .purple { color: var(--purple); }
+        .dim { color: var(--dim); }
+        .bold { font-weight: bold; }
+
+        /* rm -rf / easter egg */
+        .window.glitch { animation: shake 0.12s infinite; }
+        .window.glitch #screen { filter: hue-rotate(90deg) contrast(1.6); }
+        @keyframes shake {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-3px, 2px) skewX(1deg); }
+            50% { transform: translate(3px, -2px); }
+            75% { transform: translate(-2px, -3px) skewX(-1deg); }
+            100% { transform: translate(0, 0); }
+        }
+        .window.dead .titlebar, .window.dead .chips, .window.dead .inputline { visibility: hidden; }
+        .window.dead #screen { background: #000; color: #fff; }
+
+        /* fork bomb clones, sl train, cmatrix */
+        .bomb {
+            position: fixed;
+            width: 220px;
+            padding: 26px 10px 10px;
+            background: var(--panel);
+            border: 1px solid #3a3a3a;
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+            font-size: 12px;
+            white-space: pre;
+            z-index: 5;
+        }
+        .bomb::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 18px; background: var(--bar); border-radius: 6px 6px 0 0; }
+        .train {
+            position: fixed;
+            left: 0;
+            top: 30%;
+            z-index: 10;
+            white-space: pre;
+            line-height: 1.15;
+            color: var(--fg);
+            animation: choo 7s linear forwards;
+        }
+        @keyframes choo { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
+        .overlay { position: fixed; inset: 0; z-index: 10; background: #000; }
+        .line:has(.vim-intro) { position: relative; }
+        .vim-intro { position: absolute; left: 0; right: 0; text-align: center; }
+
+        @media (max-width: 600px) {
+            html, body { font-size: 13px; }
+            body { padding: 0; }
+            .window { height: 100vh; height: 100dvh; border-radius: 0; border: 0; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="window">
+        <div class="titlebar">
+            <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+            <span id="title">valerie@valerie.wtf: ~</span>
+        </div>
+        <div id="screen">
+            <div id="output"></div>
+            <div class="inputline">
+                <span class="prompt" id="prompt"></span>
+                <input id="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="terminal input">
+            </div>
+        </div>
+        <div class="chips">
+            <button data-cmd="help">help</button>
+            <button data-cmd="distros">distros</button>
+            <button data-cmd="cheatsheet">cheatsheet</button>
+            <button data-cmd="compare install">compare</button>
+            <button data-cmd="quiz">quiz</button>
+            <button data-cmd="clear">clear</button>
+        </div>
+    </div>
+
+    <script>
+        // ---------- data ----------
+
+        const TASKS = {
+            refresh: "refresh the package list",
+            upgrade: "upgrade every installed package",
+            install: "install a package",
+            remove: "remove a package",
+            search: "search for a package",
+            info: "show details about a package",
+            list: "list installed packages",
+            orphans: "remove unused dependencies",
+            clean: "clear the package cache"
+        };
+
+        // The first template in each list is the canonical one; the rest are accepted aliases.
+        const MANAGERS = {
+            apt: {
+                name: "APT",
+                tasks: {
+                    refresh: ["sudo apt update", "sudo apt-get update"],
+                    upgrade: ["sudo apt upgrade", "sudo apt full-upgrade", "sudo apt-get upgrade", "sudo apt-get dist-upgrade"],
+                    install: ["sudo apt install PKG", "sudo apt-get install PKG"],
+                    remove: ["sudo apt remove PKG", "sudo apt purge PKG", "sudo apt-get remove PKG", "sudo apt-get purge PKG"],
+                    search: ["apt search PKG", "apt-cache search PKG"],
+                    info: ["apt show PKG", "apt-cache show PKG"],
+                    list: ["apt list --installed", "dpkg -l"],
+                    orphans: ["sudo apt autoremove", "sudo apt-get autoremove"],
+                    clean: ["sudo apt clean", "sudo apt-get clean", "sudo apt autoclean"]
+                },
+                notes: {
+                    refresh: "this only refreshes the list of what's available. it doesn't install anything yet!",
+                    upgrade: "run `apt update` first so apt knows about the newest versions.",
+                    remove: "`remove` keeps config files. `purge` deletes them too.",
+                    clean: "deletes the downloaded .deb files in /var/cache/apt/archives."
+                }
+            },
+            pacman: {
+                name: "pacman",
+                tasks: {
+                    refresh: ["sudo pacman -Sy"],
+                    upgrade: ["sudo pacman -Syu"],
+                    install: ["sudo pacman -S PKG", "sudo pacman -S --needed PKG"],
+                    remove: ["sudo pacman -Rns PKG", "sudo pacman -Rs PKG", "sudo pacman -R PKG"],
+                    search: ["pacman -Ss PKG"],
+                    info: ["pacman -Si PKG", "pacman -Qi PKG"],
+                    list: ["pacman -Q", "pacman -Qe"],
+                    orphans: ["sudo pacman -Rns $(pacman -Qdtq)"],
+                    clean: ["sudo pacman -Sc", "sudo pacman -Scc", "paccache -r"]
+                },
+                notes: {
+                    refresh: "careful! running -Sy and then installing without -u is a \"partial upgrade\", which Arch doesn't support. just use -Syu.",
+                    upgrade: "S = sync, y = refresh the database, u = upgrade. the classic.",
+                    remove: "R = remove, n = delete config backups, s = also remove dependencies nothing else needs.",
+                    info: "-Si looks at the repos, -Qi looks at what you have installed.",
+                    orphans: "-Qdtq lists packages installed as dependencies that nothing needs anymore.",
+                    list: "-Q lists everything, -Qe only the packages you installed explicitly."
+                }
+            },
+            dnf: {
+                name: "DNF",
+                tasks: {
+                    refresh: ["dnf check-update", "sudo dnf makecache"],
+                    upgrade: ["sudo dnf upgrade", "sudo dnf update"],
+                    install: ["sudo dnf install PKG"],
+                    remove: ["sudo dnf remove PKG"],
+                    search: ["dnf search PKG"],
+                    info: ["dnf info PKG"],
+                    list: ["dnf list --installed", "dnf list installed"],
+                    orphans: ["sudo dnf autoremove"],
+                    clean: ["sudo dnf clean all"]
+                },
+                notes: {
+                    refresh: "dnf refreshes metadata on its own most of the time, so you rarely need this.",
+                    upgrade: "`dnf update` is an old alias for `dnf upgrade`. both work."
+                }
+            },
+            zypper: {
+                name: "zypper",
+                tasks: {
+                    refresh: ["sudo zypper refresh", "sudo zypper ref"],
+                    upgrade: ["sudo zypper update", "sudo zypper up", "sudo zypper dup", "sudo zypper dist-upgrade"],
+                    install: ["sudo zypper install PKG", "sudo zypper in PKG"],
+                    remove: ["sudo zypper remove --clean-deps PKG", "sudo zypper remove PKG", "sudo zypper rm PKG"],
+                    search: ["zypper search PKG", "zypper se PKG"],
+                    info: ["zypper info PKG", "zypper if PKG"],
+                    list: ["zypper search --installed-only", "zypper se -i"],
+                    orphans: ["zypper packages --unneeded"],
+                    clean: ["sudo zypper clean", "sudo zypper clean --all"]
+                },
+                notes: {
+                    upgrade: "on Leap use `zypper update`. on Tumbleweed (rolling release) use `zypper dup`.",
+                    orphans: "this lists unneeded packages. remove the ones you don't want with `zypper remove`."
+                }
+            },
+            apk: {
+                name: "apk",
+                tasks: {
+                    refresh: ["apk update"],
+                    upgrade: ["apk upgrade"],
+                    install: ["apk add PKG"],
+                    remove: ["apk del PKG"],
+                    search: ["apk search PKG"],
+                    info: ["apk info -a PKG", "apk info PKG"],
+                    list: ["apk info", "apk list --installed"],
+                    orphans: ["apk del PKG"],
+                    clean: ["apk cache clean"]
+                },
+                notes: {
+                    install: "Alpine usually runs as root (common in Docker), so no sudo. use `doas` if you're a normal user.",
+                    orphans: "apk removes unused dependencies automatically when you `apk del` something. no extra step!"
+                }
+            },
+            xbps: {
+                name: "XBPS",
+                tasks: {
+                    refresh: ["sudo xbps-install -S"],
+                    upgrade: ["sudo xbps-install -Su"],
+                    install: ["sudo xbps-install -S PKG", "sudo xbps-install PKG"],
+                    remove: ["sudo xbps-remove -R PKG", "sudo xbps-remove PKG"],
+                    search: ["xbps-query -Rs PKG"],
+                    info: ["xbps-query -RS PKG", "xbps-query -S PKG"],
+                    list: ["xbps-query -l"],
+                    orphans: ["sudo xbps-remove -o"],
+                    clean: ["sudo xbps-remove -O"]
+                },
+                notes: {
+                    install: "void splits its tools: xbps-install, xbps-remove and xbps-query.",
+                    remove: "-R also removes dependencies that nothing else needs."
+                }
+            },
+            portage: {
+                name: "Portage",
+                tasks: {
+                    refresh: ["sudo emerge --sync", "sudo emaint sync -a"],
+                    upgrade: ["sudo emerge -avuDN @world", "sudo emerge --ask --update --deep --newuse @world"],
+                    install: ["sudo emerge -av PKG", "sudo emerge --ask PKG", "sudo emerge PKG"],
+                    remove: ["sudo emerge --deselect PKG", "sudo emerge -C PKG", "sudo emerge --unmerge PKG"],
+                    search: ["emerge -s PKG", "emerge --search PKG", "eix PKG"],
+                    info: ["emerge -pv PKG", "equery meta PKG"],
+                    list: ["qlist -I"],
+                    orphans: ["sudo emerge --depclean", "sudo emerge -c"],
+                    clean: ["sudo eclean distfiles"]
+                },
+                notes: {
+                    install: "Gentoo compiles from source by default. go make a coffee. maybe dinner.",
+                    remove: "--deselect takes it out of your world set, then `emerge --depclean` actually removes it. safer than -C.",
+                    upgrade: "a = ask, v = verbose, u = update, D = deep, N = newuse (rebuild when USE flags change)."
+                }
+            },
+            nix: {
+                name: "Nix",
+                tasks: {
+                    refresh: ["sudo nix-channel --update"],
+                    upgrade: ["sudo nixos-rebuild switch --upgrade"],
+                    install: ["nix-env -iA nixos.PKG", "nix profile install nixpkgs#PKG", "nix-shell -p PKG"],
+                    remove: ["nix-env -e PKG", "nix profile remove PKG"],
+                    search: ["nix search nixpkgs PKG"],
+                    info: ["nix eval nixpkgs#PKG.meta.description"],
+                    list: ["nix-env -q", "nix profile list"],
+                    orphans: ["sudo nix-collect-garbage -d"],
+                    clean: ["sudo nix-collect-garbage", "nix-store --gc"]
+                },
+                notes: {
+                    install: "the NixOS way is adding it to environment.systemPackages in /etc/nixos/configuration.nix and running `sudo nixos-rebuild switch`. nix-env works but it's the imperative way.",
+                    orphans: "-d also deletes old generations, so you can't roll back to them afterwards!"
+                }
+            }
+        };
+
+        // Not tied to one distro. `only` limits a manager to distros using that base manager.
+        const EXTRAS = {
+            flatpak: {
+                name: "Flatpak",
+                about: "works on (almost) any distro. apps run sandboxed and come from Flathub.",
+                tasks: {
+                    refresh: ["flatpak update --appstream"],
+                    upgrade: ["flatpak update"],
+                    install: ["flatpak install flathub PKG", "flatpak install PKG"],
+                    remove: ["flatpak uninstall PKG", "flatpak remove PKG"],
+                    search: ["flatpak search PKG"],
+                    info: ["flatpak info PKG"],
+                    list: ["flatpak list", "flatpak list --app"],
+                    orphans: ["flatpak uninstall --unused"]
+                },
+                notes: {
+                    install: "flatpak names look like org.mozilla.firefox, but `flatpak install flathub firefox` will search for a match.",
+                    orphans: "removes runtimes no installed app uses anymore. frees a LOT of space."
+                }
+            },
+            snap: {
+                name: "Snap",
+                about: "Canonical's universal format, preinstalled on Ubuntu. Linux Mint blocks it by default!",
+                tasks: {
+                    refresh: ["snap refresh --list"],
+                    upgrade: ["sudo snap refresh"],
+                    install: ["sudo snap install PKG", "sudo snap install --classic PKG"],
+                    remove: ["sudo snap remove PKG", "sudo snap remove --purge PKG"],
+                    search: ["snap find PKG"],
+                    info: ["snap info PKG"],
+                    list: ["snap list"]
+                },
+                notes: {
+                    install: "some snaps (like code editors) need `--classic` to escape the sandbox.",
+                    upgrade: "snaps also update themselves automatically in the background."
+                }
+            },
+            yay: {
+                name: "yay",
+                only: "pacman",
+                about: "an AUR helper for Arch-based distros. it wraps pacman and also builds packages from the AUR.",
+                tasks: {
+                    upgrade: ["yay", "yay -Syu"],
+                    install: ["yay -S PKG"],
+                    remove: ["yay -Rns PKG"],
+                    search: ["yay -Ss PKG", "yay PKG"],
+                    info: ["yay -Si PKG"],
+                    orphans: ["yay -Yc"],
+                    clean: ["yay -Sc"]
+                },
+                notes: {
+                    install: "never run yay with sudo. it asks for your password itself when it needs to.",
+                    upgrade: "plain `yay` upgrades your repo packages AND your AUR packages in one go.",
+                    search: "`yay firefox` gives you a numbered menu to pick what to install."
+                }
+            }
+        };
+        Object.assign(MANAGERS, EXTRAS);
+
+        const DISTROS = {
+            mint: { name: "Linux Mint", mgr: "apt", color: "green" },
+            ubuntu: { name: "Ubuntu", mgr: "apt", color: "yellow" },
+            debian: { name: "Debian", mgr: "apt", color: "red" },
+            popos: { name: "Pop!_OS", mgr: "apt", color: "blue" },
+            arch: { name: "Arch Linux", mgr: "pacman", color: "blue" },
+            manjaro: { name: "Manjaro", mgr: "pacman", color: "green" },
+            endeavouros: { name: "EndeavourOS", mgr: "pacman", color: "purple" },
+            cachyos: { name: "CachyOS", mgr: "pacman", color: "green" },
+            fedora: { name: "Fedora", mgr: "dnf", color: "blue" },
+            rhel: { name: "RHEL", mgr: "dnf", color: "red" },
+            rocky: { name: "Rocky Linux", mgr: "dnf", color: "green" },
+            opensuse: { name: "openSUSE", mgr: "zypper", color: "green" },
+            alpine: { name: "Alpine Linux", mgr: "apk", color: "blue" },
+            void: { name: "Void Linux", mgr: "xbps", color: "green" },
+            gentoo: { name: "Gentoo", mgr: "portage", color: "purple" },
+            nixos: { name: "NixOS", mgr: "nix", color: "blue" }
+        };
+
+        const PKGS = ["firefox", "vlc", "git", "neovim", "htop", "fastfetch", "gimp", "curl", "obs-studio", "btop"];
+
+        // ---------- state ----------
+
+        let distroKey = null;
+        let quiz = null;
+        const history = [];
+        let histIdx = 0;
+
+        const out = document.getElementById("output");
+        const input = document.getElementById("cmd");
+        const screen = document.getElementById("screen");
+        const promptEl = document.getElementById("prompt");
+        const titleEl = document.getElementById("title");
+
+        // ---------- output helpers ----------
+
+        const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+        // tiny markup: [color]text[/] and `code`
+        function fmt(s) {
+            return esc(s)
+                .replace(/\[(\w+)\]([\s\S]*?)\[\/\]/g, '<span class="$1">$2</span>')
+                .replace(/`([^`]+)`/g, '<span class="blue">$1</span>');
+        }
+
+        // `plain` is appended as literal text (used to echo what the user typed)
+        function print(s = "", plain = "") {
+            const div = document.createElement("div");
+            div.className = "line";
+            div.innerHTML = fmt(s) + esc(plain);
+            out.appendChild(div);
+            return div;
+        }
+
+        // classic bash look: bold green user@host, bold blue path
+        function promptMarkup() {
+            if (vim) return "";
+            if (quiz) return "[pb]quiz>[/]";
+            return `[pu]${distroKey ? "you@" + distroKey : "valerie@valerie.wtf"}[/]:[pp]~[/]$`;
+        }
+
+        function updatePrompt() {
+            promptEl.innerHTML = fmt(promptMarkup());
+            if (vim) { titleEl.textContent = `${vim.file || "[No Name]"} - VIM`; return; }
+            titleEl.textContent = distroKey ? `you@${distroKey}: ~ (${DISTROS[distroKey].name})` : "valerie@valerie.wtf: ~";
+        }
+
+        function scrollDown() { screen.scrollTop = screen.scrollHeight; }
+
+        // ---------- command parsing ----------
+
+        const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const norm = s => s.trim().replace(/\s+/g, " ").replace(/^(sudo|doas) /, "");
+
+        // Find which manager + task a typed command matches.
+        function recognize(raw) {
+            const typed = norm(raw);
+            // exact templates first, so e.g. `pacman -Rns $(pacman -Qdtq)` isn't read as removing "$(pacman"
+            for (const wantPkg of [false, true])
+            for (const [mk, m] of Object.entries(MANAGERS)) {
+                for (const [tk, templates] of Object.entries(m.tasks)) {
+                    for (const t of templates) {
+                        if (t.includes("PKG") !== wantPkg) continue;
+                        const re = new RegExp("^" + escRe(norm(t)).replace("PKG", "(.+)") + "$");
+                        const match = typed.match(re);
+                        if (!match) continue;
+                        let pkg = null;
+                        if (match[1]) {
+                            pkg = match[1].split(" ").filter(w => !w.startsWith("-")).join(" ");
+                            if (!pkg) continue;
+                        }
+                        return { mgr: mk, task: tk, pkg };
+                    }
+                }
+            }
+            return null;
+        }
+
+        const canon = (mk, tk, pkg) => MANAGERS[mk].tasks[tk] ? MANAGERS[mk].tasks[tk][0].replace("PKG", pkg || "<package>") : null;
+
+        function fakeOutput(mk, task, pkg) {
+            const p = pkg || "firefox";
+            const lines = {
+                apt: {
+                    refresh: ["Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease", "Reading package lists... Done", "[green]14 packages can be upgraded.[/]"],
+                    install: ["Reading package lists... Done", "Building dependency tree... Done", `The following NEW packages will be installed:\n  ${p}`, `Setting up ${p} ...`, "[green]Done![/]"],
+                    remove: [`Removing ${p} ...`, "[green]Done![/]"]
+                },
+                pacman: {
+                    upgrade: [":: Synchronizing package databases...", " core is up to date", " extra is up to date", ":: Starting full system upgrade...", "[green] there is nothing to do[/]"],
+                    install: ["resolving dependencies...", `Packages (1) ${p}-1.0-1`, ":: Proceed with installation? [Y/n] y", `(1/1) installing ${p}  [######################] 100%`]
+                },
+                dnf: {
+                    install: ["Dependencies resolved.", ` Installing: ${p}`, "Is this ok [y/N]: y", "[green]Complete![/]"]
+                },
+                portage: {
+                    install: [`>>> Emerging (1 of 1) ${p}`, ">>> Compiling source... [dim](this could take a while)[/]", `>>> Installed ${p}`]
+                }
+            };
+            return (lines[mk] && lines[mk][task]) || ["[green]✓ done[/] [dim](simulated)[/]"];
+        }
+
+        // ---------- built-in commands ----------
+
+        const COMMANDS = {
+            help() {
+                print("[green]valerie.wtf[/] — learn package managers by actually typing them 💻\n");
+                print("  `distros`              list every distro you can pick");
+                print("  `use <distro>`         switch distro, e.g. `use mint` or `use arch`");
+                print("  `cheatsheet`           every command for your current distro");
+                print("  `learn <task>`         how to do one thing, e.g. `learn install`");
+                print("  `compare <task>`       one task across every package manager");
+                print("  `about <manager>`      everything about apt, pacman, flatpak, yay...");
+                print("  `quiz`                 test yourself 🧠");
+                print("  `game`                 play Package Panic 🎮");
+                print("  `neofetch`, `whoami`, `uname`, `date`, `cowsay`, `contact`, `history`, `clear`\n");
+                print("or just type a real command like `sudo apt install firefox` and I'll explain it.");
+                print("[dim]there are also a LOT of secrets hidden in here 👀[/]");
+                print(`[dim]tasks: ${Object.keys(TASKS).join(", ")}[/]`);
+            },
+
+            distros() {
+                const groups = {};
+                for (const [k, d] of Object.entries(DISTROS)) (groups[d.mgr] ||= []).push(`[${d.color}]${k}[/]`);
+                for (const [mk, ds] of Object.entries(groups)) print(`  [bold]${MANAGERS[mk].name.padEnd(8)}[/] ${ds.join(", ")}`);
+                print("\n[dim]extras: flatpak + snap work everywhere, yay works on Arch-based distros. try `about flatpak`.[/]");
+                print("type `use <distro>` to switch.");
+            },
+
+            use(args) {
+                const k = (args[0] || "").toLowerCase().replace(/[^a-z]/g, "");
+                if (!DISTROS[k]) {
+                    print(args[0] ? `[red]don't know "${args[0]}"[/]. try \`distros\`.` :"usage: `use <distro>`");
+                    return;
+                }
+                distroKey = k;
+                try { localStorage.setItem("distro", k); } catch (e) {}
+                const d = DISTROS[k];
+                print(`switched to [${d.color}]${d.name}[/]. package manager: [bold]${MANAGERS[d.mgr].name}[/]`);
+                print("type `cheatsheet` or try installing something!");
+            },
+
+            cheatsheet() {
+                if (!distroKey) { print("pick a distro first, e.g. `use mint`. see `distros`."); return; }
+                const d = DISTROS[distroKey];
+                print(`[${d.color}]${d.name}[/] uses [bold]${MANAGERS[d.mgr].name}[/]:\n`);
+                for (const [tk, desc] of Object.entries(TASKS)) print(`  [dim]${desc.padEnd(32)}[/] \`${canon(d.mgr, tk)}\``);
+                print("\n[dim]bonus:[/]");
+                for (const [mk, m] of Object.entries(EXTRAS)) {
+                    if (m.only && m.only !== d.mgr) continue;
+                    print(`  [dim]${(m.name + " install").padEnd(32)}[/] \`${canon(mk, "install")}\``);
+                }
+            },
+
+            about(args) {
+                const mk = (args[0] || "").toLowerCase();
+                const m = MANAGERS[mk];
+                if (!m) { print(`usage: \`about <manager>\`\n[dim]managers: ${Object.keys(MANAGERS).join(", ")}[/]`); return; }
+                const users = Object.entries(DISTROS).filter(([, d]) => d.mgr === mk || m.only === d.mgr).map(([k]) => k);
+                print(`[bold]${m.name}[/] — ${m.about || "used by " + users.join(", ")}`);
+                if (m.about && users.length) print(`[dim]works on: ${users.join(", ")}[/]`);
+                print("");
+                for (const [tk, desc] of Object.entries(TASKS)) if (m.tasks[tk]) print(`  [dim]${desc.padEnd(32)}[/] \`${canon(mk, tk)}\``);
+            },
+
+            learn(args) {
+                const tk = (args[0] || "").toLowerCase();
+                if (!TASKS[tk]) { print(`usage: \`learn <task>\`\n[dim]tasks: ${Object.keys(TASKS).join(", ")}[/]`); return; }
+                if (!distroKey) { COMMANDS.compare(args); return; }
+                const mk = DISTROS[distroKey].mgr;
+                print(`to [bold]${TASKS[tk]}[/] on ${DISTROS[distroKey].name}:\n`);
+                print(`  \`${canon(mk, tk)}\``);
+                const alts = MANAGERS[mk].tasks[tk].slice(1);
+                if (alts.length) print(`\n[dim]also works:[/] ${alts.map(a => "`" + a.replace("PKG", "<package>") + "`").join(", ")}`);
+                if (MANAGERS[mk].notes[tk]) print(`\n💡 ${MANAGERS[mk].notes[tk]}`);
+            },
+
+            compare(args) {
+                const tk = (args[0] || "").toLowerCase();
+                if (!TASKS[tk]) { print(`usage: \`compare <task>\`\n[dim]tasks: ${Object.keys(TASKS).join(", ")}[/]`); return; }
+                print(`how to [bold]${TASKS[tk]}[/] everywhere:\n`);
+                for (const mk of Object.keys(MANAGERS)) {
+                    const c = canon(mk, tk);
+                    print(`  [green]${MANAGERS[mk].name.padEnd(8)}[/] ${c ? "`" + c + "`" : "[dim](not a thing here)[/]"}`);
+                }
+            },
+
+            quiz() {
+                quiz = { score: 0, total: 0 };
+                print("[yellow]🧠 QUIZ TIME[/] — type the command. `hint`, `skip` or `quit` anytime.\n");
+                nextQuestion();
+            },
+
+            neofetch() {
+                const d = distroKey ? DISTROS[distroKey] : null;
+                print(`[green]   .--.     [/] [bold]you@${distroKey || "valerie.wtf"}[/]`);
+                print(`[green]  |o_o |    [/] -------------`);
+                print(`[green]  |:_/ |    [/] [green]OS:[/] ${d ? d.name : "valerie.wtf (browser edition)"}`);
+                print(`[green] //   \\ \\   [/] [green]Packages:[/] ${d ? MANAGERS[d.mgr].name : "none, pick a distro!"}`);
+                print(`[green](|     | )  [/] [green]Shell:[/] vibes`);
+                print(`[green]/'\\_   _/\`\\ [/] [green]Uptime:[/] since you opened this tab`);
+                print(`[green]\\___)=(___/ [/] [green]Terminal:[/] valerie.wtf`);
+            },
+
+            whoami() { print(distroKey ? "you" : "valerie (well, a guest in valerie's terminal)"); },
+
+            contact() { print("contact me at [green]valeriecollins05(at)proton(dot)me[/] 💌"); },
+
+            history() { history.forEach((h, i) => print(`  [dim]${String(i + 1).padStart(3)}[/]  ${h}`)); },
+
+            clear() { out.innerHTML = ""; },
+
+            ls() { print("[blue]Desktop[/]  [blue]Documents[/]  [blue]Downloads[/]  secrets.txt"); },
+
+            cat(args) {
+                if (args[0] === "secrets.txt") print("nice try 🙂");
+                else print(args[0] ? `cat: ${args[0]}: No such file or directory` : "🐱 meow");
+            },
+
+            echo(args) { print("", args.join(" ")); },
+
+            exit() { print("there is no escape 🙂 (try `clear` instead)"); },
+
+            pwd() { print(distroKey ? "/home/you" : "/home/valerie"); },
+
+            cd(args) { if (args[0] && args[0] !== "~") print(`bash: cd: ${args[0]}: No such file or directory`); },
+
+            date() { print(new Date().toString()); },
+
+            uname(args) {
+                const d = distroKey ? DISTROS[distroKey].name : "valerie.wtf";
+                print(args.includes("-a") ? `Linux ${distroKey || "valerie"} 6.11.0-wtf #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux (${d})` : "Linux");
+            },
+
+            cowsay(args) {
+                const msg = args.join(" ") || "moo. use flatpak.";
+                print(` ${"_".repeat(msg.length + 2)}\n< ${msg} >\n ${"-".repeat(msg.length + 2)}\n        \\   ^__^\n         \\  (oo)\\_______\n            (__)\\       )\\/\\\n                ||----w |\n                ||     ||`);
+            },
+
+            sudo(args) {
+                if (!args.length) print("usage: sudo <command>");
+                else if (args[0] === "su" || args[0] === "-i") print("[red]nice try.[/] root access denied 🙂");
+                else if (COMMANDS[args[0]] && args[0] !== "sudo") COMMANDS[args[0]](args.slice(1));
+                else print(`[red]sudo: ${args[0]}: command not found[/]`);
+            },
+
+            vim(args) { openVim(args[0]); },
+            vi(args) { openVim(args[0]); },
+            nvim(args) { openVim(args[0]); },
+
+            emacs() { print("emacs is a great operating system, lacking only a decent editor. [dim](try `vim`. if you dare 👀)[/]"); },
+
+            nano() { print("[green]nano[/] is honestly a great pick for beginners. Ctrl+O saves, Ctrl+X exits, and the shortcuts are printed at the bottom 💚\n[dim]want to suffer instead? try `vim`.[/]"); },
+
+            sl() { train(); },
+
+            cmatrix() { matrix(); },
+
+            game() {
+                print("🎮 loading [green]Package Panic[/]... type the right command before the requests hit the floor!");
+                setTimeout(() => { location.href = "game/"; }, 700);
+            },
+
+            play() { COMMANDS.game(); },
+
+            fortune() {
+                const f = [
+                    "There is no place like 127.0.0.1",
+                    "It's not a bug, it's an undocumented feature.",
+                    "To understand recursion, you must first understand recursion.",
+                    "Linux is user friendly. It's just picky about who its friends are.",
+                    "Have you tried turning it off and on again? (type `reboot`)",
+                    "rm -rf / is not a personality.",
+                    "Real programmers count from 0.",
+                    "Your distro is fine. Stop distro hopping. (you won't.)",
+                    "The quieter you become, the more you are able to hear the fans spinning."
+                ];
+                print(f[Math.floor(Math.random() * f.length)]);
+            },
+
+            reboot() {
+                busy = true;
+                print("[yellow]Broadcast message from root@valerie.wtf: The system will reboot now![/]");
+                setTimeout(() => rebootSequence(
+                    ["Stopped User Manager", "Unmounted /home", "Reached target System Reboot", "Started Journal Service", "Started Network Manager", "Reached target Graphical Interface"],
+                    ["[dim]rebooted. everything's exactly where you left it. that's kind of the point 😌[/]\n"]
+                ), 900);
+            },
+
+            shutdown() { powerOff(); },
+            poweroff() { powerOff(); }
+        };
+
+        // ---------- quiz ----------
+
+        function nextQuestion() {
+            const keys = Object.keys(DISTROS);
+            const dk = keys[Math.floor(Math.random() * keys.length)];
+            const tasks = Object.keys(TASKS);
+            const tk = tasks[Math.floor(Math.random() * tasks.length)];
+            const needsPkg = MANAGERS[DISTROS[dk].mgr].tasks[tk][0].includes("PKG");
+            const pkg = needsPkg ? PKGS[Math.floor(Math.random() * PKGS.length)] : null;
+            Object.assign(quiz, { dk, tk, pkg });
+            const d = DISTROS[dk];
+            print(`[bold]Q${quiz.total + 1}:[/] on [${d.color}]${d.name}[/], how do you ${TASKS[tk]}${pkg ? ` ([bold]${pkg}[/])` : ""}?`);
+        }
+
+        function answerQuiz(line) {
+            const word = line.trim().toLowerCase();
+            const { dk, tk, pkg } = quiz;
+            const mk = DISTROS[dk].mgr;
+            if (word === "quit" || word === "exit") {
+                print(`final score: [green]${quiz.score}/${quiz.total}[/] ${quiz.score === quiz.total && quiz.total ? "🏆 FLAWLESS" : "🫶"}`);
+                quiz = null;
+                return;
+            }
+            if (word === "hint") { print(`💡 ${DISTROS[dk].name} uses [bold]${MANAGERS[mk].name}[/].`); return; }
+            quiz.total++;
+            if (word === "skip") {
+                print(`answer: \`${canon(mk, tk, pkg)}\`\n`);
+                nextQuestion();
+                return;
+            }
+            const r = recognize(line);
+            if (r && r.mgr === mk && r.task === tk && (!pkg || r.pkg === pkg)) {
+                quiz.score++;
+                print(`[green]✓ correct![/] [dim](${quiz.score}/${quiz.total})[/]\n`);
+            } else if (r && r.mgr !== mk) {
+                print(`[red]✗[/] that's ${MANAGERS[r.mgr].name}, but ${DISTROS[dk].name} uses ${MANAGERS[mk].name}: \`${canon(mk, tk, pkg)}\`\n`);
+            } else {
+                print(`[red]✗[/] the answer was \`${canon(mk, tk, pkg)}\` [dim](${quiz.score}/${quiz.total})[/]\n`);
+            }
+            nextQuestion();
+        }
+
+        // ---------- main loop ----------
+
+        function explain(r, raw) {
+            const curMgr = distroKey ? DISTROS[distroKey].mgr : null;
+            const m = MANAGERS[r.mgr];
+            const extra = EXTRAS[r.mgr];
+            if (curMgr && extra && extra.only && extra.only !== curMgr) {
+                print(`[red]bash: ${norm(raw).split(" ")[0]}: command not found[/]`);
+                print(`${m.name} only exists on Arch-based distros. on ${DISTROS[distroKey].name} use \`${canon(curMgr, r.task, r.pkg) || canon(curMgr, "install", r.pkg)}\` (or flatpak!)`);
+                return;
+            }
+            if (curMgr && !extra && curMgr !== r.mgr) {
+                print(`[red]bash: ${norm(raw).split(" ")[0]}: command not found[/]`);
+                print(`that's ${m.name}, but ${DISTROS[distroKey].name} uses [bold]${MANAGERS[curMgr].name}[/]. you want:`);
+                print(`  \`${canon(curMgr, r.task, r.pkg)}\``);
+                return;
+            }
+            if (r.mgr === "yay" && /^\s*sudo\s/.test(raw)) {
+                print("[red]-> Please avoid running yay as root/sudo.[/]");
+                print(`💡 just run \`${canon("yay", r.task, r.pkg)}\`. yay asks for your password when it needs it.`);
+                return;
+            }
+            const needsRoot = m.tasks[r.task][0].startsWith("sudo ");
+            if (needsRoot && !/^\s*(sudo|doas)\s/.test(raw)) {
+                print("[red]error: you cannot perform this operation unless you are root.[/]");
+                print(`💡 changing the system needs admin rights. try: \`${canon(r.mgr, r.task, r.pkg)}\``);
+                return;
+            }
+            if (r.task === "install" && /^(windows|windows ?1[01]|win1[01]|macos|osx)$/i.test(r.pkg)) {
+                print(r.mgr === "apt" ? `[red]E: Unable to locate package ${r.pkg}[/]` : `[red]error: target not found: ${r.pkg}[/]`);
+                print("and honestly? good. you're free now 🐧");
+                return;
+            }
+            if (r.mgr === "snap" && distroKey === "mint") {
+                print("[red]error: snap: command not found[/]");
+                print("💡 Linux Mint blocks Snap by default (see /etc/apt/preferences.d/nosnap.pref). use flatpak instead, it's built into Mint's Software Manager!");
+                return;
+            }
+            fakeOutput(r.mgr, r.task, r.pkg).forEach(l => print(l));
+            if ((r.mgr === "pacman" || r.mgr === "yay") && r.task === "upgrade" && Math.random() < 0.2) {
+                const doom = [
+                    ["(42/69) upgrading nvidia-dkms", "[red]==> ERROR: module nvidia failed to build. enjoy your black screen 🖤[/]"],
+                    ["[red]error: failed to commit transaction (conflicting files)[/]", "[red]python-pip: /usr/lib/python3.12/site-packages/pip exists in filesystem[/]"],
+                    ["(13/13) upgrading linux", "[red]==> ERROR: failed to build initramfs. good luck rebooting 🙂[/]"],
+                    ["[red]error: archlinux-keyring: signature from \"Some Dev <dev@archlinux.org>\" is marginal trust[/]", "[red]error: failed to commit transaction (invalid or corrupted package (PGP signature))[/]"]
+                ];
+                doom[Math.floor(Math.random() * doom.length)].forEach(l => print(l));
+                print("[dim](just a meme 😭 Arch updates are usually fine. check archlinux.org/news before big ones tho!)[/]");
+                return;
+            }
+            print(`\n[dim]📘 ${m.name}: this would ${TASKS[r.task]}${r.pkg ? ` (${r.pkg})` : ""}.[/]`);
+            if (m.notes[r.task]) print(`💡 ${m.notes[r.task]}`);
+            if (!curMgr) print(`[dim]tip: \`use <distro>\` and I'll warn you if you use the wrong package manager.[/]`);
+        }
+
+        function run(line) {
+            print(promptMarkup() + " ", line);
+            if (line.trim()) { history.push(line); }
+            histIdx = history.length;
+
+            if (quiz) { answerQuiz(line); return; }
+
+            if (/^\s*sudo\s/.test(line) && !lectured) {
+                lectured = true;
+                print("[dim]We trust you have received the usual lecture from the local System\nAdministrator. It usually boils down to these three things:\n\n    #1) Respect the privacy of others.\n    #2) Think before you type.\n    #3) With great power comes great responsibility.\n\n[sudo] password for you: ********[/]");
+            }
+
+            const flat = line.trim().replace(/\s+/g, " ").toLowerCase();
+            if (/^:\(\) ?\{ ?:\|: ?& ?\} ?; ?:$/.test(flat)) { forkBomb(); return; }
+            if (/^(sudo )?apt(-get)? moo$/.test(flat)) {
+                print("                 (__)\n                 (oo)\n           /------\\/\n          / |    ||\n         *  /\\---/\\\n            ~~   ~~\n...\"Have you mooed today?\"...");
+                print("[dim](this is a real apt easter egg btw 🐄)[/]");
+                return;
+            }
+            if (flat === "make me a sandwich") { print("What? Make it yourself."); return; }
+            if (flat === "sudo make me a sandwich") { print("Okay. 🥪"); return; }
+            if (/^i use arch( btw)?!*$/.test(flat) || flat === "btw") {
+                const archy = distroKey && DISTROS[distroKey].mgr === "pacman";
+                print(archy ? "we KNOW. you've told us 47 times this week 🙄" : `no you don't, you're on ${distroKey ? DISTROS[distroKey].name : "a website"} 🤨 (\`use arch\` if you want bragging rights)`);
+                return;
+            }
+
+            const [name, ...args] = line.trim().split(/\s+/);
+            if (!name) return;
+
+            const rm = line.trim().replace(/\s+/g, " ").match(/^(sudo )?rm (-rf|-fr|-r -f|-f -r|-Rf|-rF)( --no-preserve-root)? \/\*?( --no-preserve-root)?$/);
+            if (rm) {
+                if (rm[1]) { meltdown(); return; }
+                ["bin", "boot", "etc", "root", "usr"].forEach(d => print(`rm: cannot remove '/${d}': Permission denied`));
+                print("[dim]...you're not root. thank god. (don't try it with sudo 👀)[/]");
+                return;
+            }
+
+            const r = recognize(line);
+            if (r) { explain(r, line); return; }
+
+            const cmd = COMMANDS[name.toLowerCase()];
+            if (cmd) { cmd(args); return; }
+
+            if (DISTROS[name.toLowerCase()]) { COMMANDS.use([name]); return; }
+
+            const mgrs = { apt: "apt", "apt-get": "apt", pacman: "pacman", dnf: "dnf", yum: "dnf", zypper: "zypper", apk: "apk", emerge: "portage", "nix-env": "nix", nix: "nix", flatpak: "flatpak", snap: "snap", yay: "yay", paru: "yay" };
+            const bare = norm(line).split(" ")[0];
+            if (bare.startsWith("xbps")) mgrs[bare] = "xbps";
+            if (mgrs[bare]) {
+                print(`hmm, I don't recognise that ${MANAGERS[mgrs[bare]].name} command.`);
+                print(`try \`learn install\` or \`compare install\` to see the right syntax.`);
+                return;
+            }
+
+            print(`[red]${name}: command not found[/]. type \`help\`.`);
+        }
+
+        const COMPLETIONS = [...Object.keys(COMMANDS), ...Object.keys(DISTROS).map(d => "use " + d), ...Object.keys(TASKS).flatMap(t => ["learn " + t, "compare " + t]), ...Object.keys(MANAGERS).map(m => "about " + m)];
+
+        input.addEventListener("keydown", e => {
+            if (busy) { e.preventDefault(); return; }
+            if (vim) {
+                if (e.key === "Escape") { vim.msg = "[dim]you pressed Esc. you're in normal mode now. still in vim tho 🙂[/]"; renderVim(); return; }
+                if (e.key === "c" && e.ctrlKey) { e.preventDefault(); vim.msg = "Type  :qa!  and press <Enter> to abandon all changes and exit Vim"; renderVim(); return; }
+                if (e.key === "Enter") { vimInput(input.value); input.value = ""; updatePrompt(); scrollDown(); }
+                return;
+            }
+            if (e.key === "Enter") {
+                const v = input.value;
+                input.value = "";
+                run(v);
+                updatePrompt();
+                scrollDown();
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                if (histIdx > 0) input.value = history[--histIdx];
+            } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                histIdx = Math.min(history.length, histIdx + 1);
+                input.value = history[histIdx] || "";
+            } else if (e.key === "Tab") {
+                e.preventDefault();
+                const v = input.value.toLowerCase();
+                const hits = COMPLETIONS.filter(c => c.startsWith(v));
+                if (hits.length === 1) input.value = hits[0] + " ";
+                else if (hits.length > 1) { print(`[dim]${hits.join("  ")}[/]`); scrollDown(); }
+            } else if (e.key === "l" && e.ctrlKey) {
+                e.preventDefault();
+                COMMANDS.clear();
+            }
+        });
+
+        screen.addEventListener("click", () => { if (!window.getSelection().toString()) input.focus(); });
+
+        document.querySelectorAll(".chips button").forEach(b => b.addEventListener("click", () => {
+            if (busy || vim) return;
+            run(b.dataset.cmd);
+            updatePrompt();
+            scrollDown();
+            input.focus();
+        }));
+
+        // ---------- sudo rm -rf / ----------
+
+        let busy = false;
+        const win = document.querySelector(".window");
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        const DOOMED = [
+            "/bin/bash", "/bin/ls", "/bin/cat", "/bin/sudo", "/boot/vmlinuz-linux", "/boot/initramfs-linux.img",
+            "/boot/grub/grub.cfg", "/etc/passwd", "/etc/shadow", "/etc/fstab", "/etc/hostname", "/etc/os-release",
+            "/home/you/Documents/homework_FINAL_v3.docx", "/home/you/Pictures/memes", "/home/you/.bash_history",
+            "/home/you/.config/discord", "/home/you/Downloads/totally_legal_movie.mkv", "/home/you/.ssh/id_ed25519",
+            "/lib/modules/6.11.0-wtf", "/lib/systemd/systemd", "/opt/google/chrome", "/root/.bashrc",
+            "/usr/bin/python3", "/usr/bin/vim", "/usr/bin/firefox", "/usr/lib/libc.so.6", "/usr/lib/libstdc++.so.6",
+            "/usr/share/fonts", "/usr/share/icons", "/var/log/syslog", "/var/lib/dpkg/status", "/var/lib/pacman/local"
+        ];
+
+        async function meltdown() {
+            busy = true;
+            input.blur();
+            print("[dim]rm: it is dangerous to operate recursively on '/'... oh you used sudo. ok. bye 🫡[/]");
+            await sleep(900);
+
+            for (let i = 0; i < 140; i++) {
+                const path = i < DOOMED.length ? DOOMED[i] : DOOMED[Math.floor(Math.random() * DOOMED.length)] + "/" + Math.random().toString(36).slice(2, 9);
+                print(`removed '${path}'`);
+                if (i === 70) print("[red]bash: /usr/bin/ls: No such file or directory[/]");
+                if (i === 85) print("[red]bash: /usr/bin/sleep: cannot execute: required file not found[/]");
+                if (i === 100) { print("[red]Segmentation fault (core dumped)[/]"); win.classList.add("glitch"); }
+                if (i === 115) print("[red]systemd[1]: Caught <SEGV>, dumped core as pid 666.[/]");
+                scrollDown();
+                await sleep(i < 40 ? 35 : 12);
+            }
+            await sleep(700);
+
+            win.classList.remove("glitch");
+            win.classList.add("dead");
+            out.innerHTML = "";
+            const t = (performance.now() / 1000).toFixed(6).padStart(12);
+            const code = "0x00007f00";
+            [
+                `[${t}] Kernel panic - not syncing: Attempted to kill init! exitcode=${code}`,
+                `[${t}] CPU: 0 PID: 1 Comm: systemd Not tainted 6.11.0-wtf #1`,
+                `[${t}] Hardware name: valerie.wtf/Browser Tab, BIOS 1.0 10/17/2026`,
+                `[${t}] Call Trace:`,
+                `[${t}]  <TASK>`,
+                `[${t}]  dump_stack_lvl+0x5d/0x80`,
+                `[${t}]  panic+0x118/0x2f0`,
+                `[${t}]  do_exit.cold+0x15/0x15`,
+                `[${t}]  do_group_exit+0x2d/0x90`,
+                `[${t}]  __x64_sys_exit_group+0x18/0x20`,
+                `[${t}]  do_syscall_64+0x82/0x160`,
+                `[${t}]  entry_SYSCALL_64_after_hwframe+0x76/0x7e`,
+                `[${t}]  </TASK>`,
+                `[${t}] Kernel Offset: disabled`,
+                `[${t}] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=${code} ]---`
+            ].forEach(l => print("", l));
+            await sleep(2500);
+            print("", "\n(your caps lock light is blinking. you did this.)\n\npress any key or tap to reboot");
+            scrollDown();
+
+            await new Promise(res => {
+                const go = () => { window.removeEventListener("keydown", go); window.removeEventListener("pointerdown", go); res(); };
+                window.addEventListener("keydown", go);
+                window.addEventListener("pointerdown", go);
+            });
+            await rebootSequence(
+                ["Booted from rescue USB", "Restoring / from backup (phew)", "Reinstalling literally everything", "Mounting /home (your memes survived)", "Started Network Manager", "Reached target Graphical Interface"],
+                [
+                    "[yellow]💀 you deleted your entire system. luckily this is a website.[/]",
+                    "[dim]fun fact: real `rm` refuses `-rf /` without --no-preserve-root, but `rm -rf /*` has no failsafe at all. never run either![/]\n"
+                ]
+            );
+        }
+
+        async function rebootSequence(units, after) {
+            busy = true;
+            out.innerHTML = "";
+            win.classList.remove("dead");
+            for (const l of ["[dim]valerie.wtf BIOS v1.0 — POST OK[/]", "", "Loading Linux 6.11.0-wtf ...", "Loading initial ramdisk ..."]) {
+                print(l);
+                await sleep(350);
+            }
+            for (const unit of units) {
+                print(` [ [green]  OK  [/] ] ${unit}.`);
+                scrollDown();
+                await sleep(300);
+            }
+            await sleep(600);
+            out.innerHTML = "";
+            boot();
+            after.forEach(l => print(l));
+            busy = false;
+            updatePrompt();
+            scrollDown();
+            input.focus();
+        }
+
+        async function powerOff() {
+            busy = true;
+            win.classList.add("dead");
+            out.innerHTML = "";
+            for (const l of ["[  OK  ] Stopped target Graphical Interface.", "[  OK  ] Unmounted /home.", "[  OK  ] Reached target Power-Off.", "Power down."]) {
+                print("", l);
+                await sleep(400);
+            }
+            await sleep(1800);
+            print("", "\n...jk. websites can't turn off 🙂");
+            await sleep(1500);
+            await rebootSequence(["Started Journal Service", "Started Network Manager", "Reached target Graphical Interface"], ["[dim]back already. you can just close the tab, you know 🙂[/]\n"]);
+        }
+
+        // ---------- :(){ :|:& };: ----------
+
+        async function forkBomb() {
+            busy = true;
+            input.blur();
+            const bombs = [];
+            for (let n = 1; n <= 128; n *= 2) {
+                while (bombs.length < n) {
+                    const b = document.createElement("div");
+                    b.className = "bomb";
+                    b.textContent = ":(){ :|:& };:\n:(){ :|:& };:\n:(){ :|:& };:";
+                    b.style.left = Math.random() * Math.max(0, innerWidth - 220) + "px";
+                    b.style.top = Math.random() * Math.max(0, innerHeight - 100) + "px";
+                    document.body.appendChild(b);
+                    bombs.push(b);
+                }
+                if (n >= 16) print("[red]bash: fork: retry: Resource temporarily unavailable[/]");
+                scrollDown();
+                await sleep(n < 8 ? 450 : 250);
+            }
+            win.classList.add("glitch");
+            for (let i = 0; i < 6; i++) { print("[red]bash: fork: Resource temporarily unavailable[/]"); scrollDown(); await sleep(150); }
+            await sleep(900);
+            bombs.forEach(b => b.remove());
+            win.classList.remove("glitch");
+            const t = (performance.now() / 1000).toFixed(6);
+            print(`[yellow][${t}] Out of memory: Killed process 1337 (bash) total-vm:∞kB, anon-rss:all of it[/]`);
+            print("\n💣 that was a [bold]fork bomb[/]: a function that calls itself twice, forever, until the system runs out of processes.");
+            print("[dim]the OOM killer saved you this time. never paste random commands from the internet!![/]");
+            busy = false;
+            updatePrompt();
+            scrollDown();
+            input.focus();
+        }
+
+        // ---------- sl ----------
+
+        function train() {
+            busy = true;
+            const t = document.createElement("div");
+            t.className = "train";
+            t.textContent = [
+                "                        (  ) (@@) ( )  (@)  ()    @@    O     @     O     @",
+                "                   (@@@)",
+                "               (    )",
+                "            (@@@@)",
+                "          (   )",
+                "      ====        ________                ___________",
+                "  _D _|  |_______/        \\__I_I_____===__|_________|",
+                "   |(_)---  |   H\\________/ |   |        =|___ ___|      _________________",
+                "   /     |  |   H  |  |     |   |         ||_| |_||     _|                \\_____A",
+                "  |      |  |   H  |__--------------------| [___] |   =|                        |",
+                "  | ________|___H__/__|_____/[][]~\\_______|       |   -|                        |",
+                "  |/ |   |-----------I_____I [][] []  D   |=======|____|________________________|_",
+                "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__|__________________________|_",
+                " |/-=|___|=    ||    ||    ||    |_____/~\\___/          |_D__D__D_|  |_D__D__D_|",
+                "  \\_/      \\O=====O=====O=====O_/      \\_/               \\_/   \\_/    \\_/   \\_/"
+            ].join("\n");
+            document.body.appendChild(t);
+            t.addEventListener("animationend", () => {
+                t.remove();
+                print("🚂 choo choo! [dim]you probably meant `ls`. `sl` (steam locomotive) is a real prank package that punishes typos: `sudo apt install sl`[/]");
+                busy = false;
+                updatePrompt();
+                scrollDown();
+                input.focus();
+            });
+        }
+
+        // ---------- cmatrix ----------
+
+        function matrix() {
+            busy = true;
+            input.blur();
+            const c = document.createElement("canvas");
+            c.className = "overlay";
+            c.width = innerWidth;
+            c.height = innerHeight;
+            document.body.appendChild(c);
+            const ctx = c.getContext("2d");
+            const size = 16;
+            const drops = Array(Math.ceil(c.width / size)).fill(0).map(() => Math.random() * -50);
+            const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF$#@%&";
+            ctx.font = `${size}px monospace`;
+            const tick = setInterval(() => {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+                ctx.fillRect(0, 0, c.width, c.height);
+                ctx.fillStyle = "#4ae24a";
+                drops.forEach((y, i) => {
+                    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * size, y * size);
+                    drops[i] = y * size > c.height && Math.random() > 0.97 ? 0 : y + 1;
+                });
+            }, 50);
+            let done = false;
+            const stop = () => {
+                if (done) return;
+                done = true;
+                clearInterval(tick);
+                c.remove();
+                removeEventListener("keydown", stop);
+                removeEventListener("pointerdown", stop);
+                print("[green]wake up, neo...[/] [dim](the real one: `sudo apt install cmatrix`)[/]");
+                busy = false;
+                updatePrompt();
+                scrollDown();
+                input.focus();
+            };
+            setTimeout(() => {
+                addEventListener("keydown", stop);
+                addEventListener("pointerdown", stop);
+            }, 300);
+            setTimeout(stop, 8000);
+        }
+
+        // ---------- vim (good luck) ----------
+
+        let vim = null;
+        let lectured = false;
+
+        const VIM_HINTS = [
+            "-- INSERT -- [dim](you're typing into the file now 😳)[/]",
+            "[dim]hint: vim commands start with a colon, like :q[/]",
+            "[dim]hint: :q! quits without saving[/]",
+            null,
+            "[yellow]people have been trapped in vim since 1991. type :q! and press Enter. please.[/]"
+        ];
+
+        function openVim(file) {
+            vim = { file, lines: [], saved: out.innerHTML, msg: file ? `"${file}" [New]` : "", dirty: false, tries: 0, start: Date.now() };
+            renderVim();
+        }
+
+        function renderVim() {
+            out.innerHTML = "";
+            const rows = Math.max(8, Math.floor(screen.clientHeight / 23) - 2);
+            const intro = ["VIM - Vi IMproved", "", "version 9.1.0", "by Bram Moolenaar et al.", "Vim is open source and freely distributable", "", "type  :q<Enter>               to exit", "type  :help<Enter>  or  <F1>  for on-line help"];
+            const introAt = Math.floor((rows - intro.length) / 2);
+            for (let i = 0; i < rows; i++) {
+                if (i < vim.lines.length) print("", vim.lines[i]);
+                else if (!vim.lines.length && i >= introAt && i < introAt + intro.length) {
+                    // the empty-buffer splash: tilde on the left, text centred over the row
+                    print("[blue]~[/]").innerHTML += `<span class="vim-intro">${esc(intro[i - introAt])}</span>`;
+                } else print("[blue]~[/]");
+            }
+            print(vim.msg || " ");
+        }
+
+        function closeVim(note) {
+            const secs = Math.round((Date.now() - vim.start) / 1000);
+            out.innerHTML = vim.saved;
+            vim = null;
+            print(`[green]you escaped vim in ${secs}s.[/] ${note}`);
+            print("[dim]cheatsheet: :q quit · :q! quit without saving · :wq save and quit · i to type · Esc to stop typing[/]");
+        }
+
+        function vimInput(line) {
+            const cmd = line.trim();
+            if (cmd === "ZZ") { vimInput(":x"); return; }
+            if (!cmd.startsWith(":")) {
+                if (line) { vim.lines.push(line); vim.dirty = true; }
+                vim.tries++;
+                vim.msg = VIM_HINTS[Math.min(vim.tries, VIM_HINTS.length) - 1] || `[dim]you've been in vim for ${Math.round((Date.now() - vim.start) / 1000)}s. this is how it starts 💀[/]`;
+                renderVim();
+                return;
+            }
+            const [c, arg] = cmd.slice(1).split(/\s+/);
+            if (["q", "quit"].includes(c)) {
+                if (vim.dirty) vim.msg = "[red]E37: No write since last change (add ! to override)[/]";
+                else { closeVim(vim.tries ? "put it on your resume 📄" : "first try?? who ARE you 😳"); return; }
+            } else if (["q!", "qa!", "quit!", "cq"].includes(c)) {
+                closeVim("put it on your resume 📄");
+                return;
+            } else if (["w", "write"].includes(c) || ["wq", "x", "wq!", "x!"].includes(c)) {
+                if (arg) vim.file = arg;
+                if (!vim.file) vim.msg = "[red]E32: No file name[/]";
+                else if (c === "w" || c === "write") {
+                    vim.dirty = false;
+                    vim.msg = `"${vim.file}" ${vim.lines.length}L written`;
+                } else {
+                    closeVim(`and you saved ${vim.file}! a natural 💅`);
+                    return;
+                }
+            } else if (c === "help" || c === "h") {
+                vim.msg = "[dim]lol. lmao even. the help is: type :q! and press Enter[/]";
+            } else {
+                vim.msg = `[red]E492: Not an editor command: ${cmd.slice(1)}[/]`;
+            }
+            renderVim();
+        }
+
+        // ---------- boot ----------
+
+        function boot() {
+            print("[green]██╗   ██╗ █████╗ ██╗     ███████╗██████╗ ██╗███████╗[/]");
+            print("[green]██║   ██║██╔══██╗██║     ██╔════╝██╔══██╗██║██╔════╝[/]");
+            print("[green]╚██╗ ██╔╝███████║██║     █████╗  ██████╔╝██║█████╗  [/]");
+            print("[green] ╚████╔╝ ██╔══██║██║     ██╔══╝  ██╔══██╗██║██╔══╝  [/]");
+            print("[green]  ╚═══╝  ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝╚══════╝[/]");
+            out.querySelectorAll(".line").forEach(l => l.classList.add("banner"));
+            print();
+            print("welcome to [green]valerie.wtf[/]! learn your distro's package manager by typing it.");
+            print("start with `distros`, then `use mint` (or arch, fedora...). type `help` for everything.\n");
+        }
+
+        boot();
+        try {
+            const saved = localStorage.getItem("distro");
+            if (DISTROS[saved]) { distroKey = saved; print(`[dim]welcome back! still on ${DISTROS[saved].name}.[/]\n`); }
+        } catch (e) {}
+        updatePrompt();
+        input.focus();
+    </script>
+
+</body>
+
+</html>
