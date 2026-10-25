@@ -28,8 +28,18 @@
         egg:      ["Egg", "good", "Tap the egg to keep it warm. It hatches when the Hatching bar fills up."]
     },
 
+    // what he can eat. Fish come from fishing or the shop; the rest only from the shop.
+    foods: [
+        { id: "fish", name: "Fish", sprite: "fish", food: 25, price: 3, log: "ate a fish 🐟" },
+        { id: "bigfish", name: "Big fish", sprite: "bigfish", food: 40, fun: 5, price: 6, log: "ate a big fish 🐠", say: "A BIG one!! He's thrilled 🐠" },
+        { id: "icecream", name: "Ice cream", sprite: "icecream", food: 15, fun: 25, price: 8, log: "had some ice cream 🍦", say: "Brain freeze!! 🍦 He loves it" },
+        { id: "taco", name: "Fish taco", sprite: "taco", food: 35, fun: 15, price: 10, log: "ate a fish taco 🌮", say: "A fish TACO?? Best day of his life 🌮" },
+        { id: "sushi", name: "Sushi platter", sprite: "sushi", food: 55, fun: 20, price: 15, log: "ate a whole sushi platter 🍣", say: "Fancy!! He eats it very politely 🍣" }
+    ],
+    starterPantry: { fish: 5 },
+
     items: [
-        { id: "fish", label: "Fish", sprite: "fish", action: "feed" },
+        { id: "food", label: "Food", sprite: "fish", action: "feed" },
         { id: "soap", label: "Soap", sprite: "soap", action: "bathe", scrub: true },
         { id: "ball", label: "Ball", sprite: "ball", action: "play" },
         { id: "pill", label: "Meds", sprite: "pill", action: "heal" }
@@ -47,7 +57,13 @@
         { id: "headphones", name: "Headphones", slot: "head" },
         { id: "heartshades", name: "Heart shades", slot: "face" },
         { id: "bowtie", name: "Bow tie", slot: "neck" },
-        { id: "fishhat", name: "Fish hat", slot: "head", unlock: "golden", lockedText: "Catch a golden fish to unlock" }
+        { id: "fishhat", name: "Fish hat", slot: "head", unlock: "golden", lockedText: "Catch a golden fish to unlock" },
+        { id: "chef", name: "Chef's hat", slot: "head", price: 30 },
+        { id: "monocle", name: "Monocle", slot: "face", price: 35 },
+        { id: "pearls", name: "Pearls", slot: "neck", price: 40 },
+        { id: "pirate", name: "Pirate hat", slot: "head", price: 45 },
+        { id: "wizard", name: "Wizard hat", slot: "head", price: 50 },
+        { id: "halo", name: "Halo", slot: "head", price: 60 }
     ],
 
     activity: {
@@ -58,13 +74,13 @@
         debugRare: "Golden fish next cast",
         debugQuick: "Instant bites",
         catches: [
-            { id: "fish", name: "a fish", short: "🐟", weight: 55, food: 20 },
-            { id: "bigfish", name: "a BIG fish", short: "big 🐠", weight: 18, food: 35, fun: 10 },
-            { id: "goldfish", name: "a GOLDEN fish", short: "golden ✨", weight: 4, rare: "golden",
+            { id: "fish", name: "a fish", short: "🐟", weight: 55, pantry: "fish", coins: 2 },
+            { id: "bigfish", name: "a BIG fish", short: "big 🐠", weight: 18, pantry: "bigfish", coins: 4 },
+            { id: "goldfish", name: "a GOLDEN fish", short: "golden ✨", weight: 4, rare: "golden", coins: 25,
               firstMsg: "You unlocked the Fish hat in the Wardrobe!! 🎩🐟", againMsg: "Another one! Sudo is in awe ✨" },
-            { id: "boot", name: "an old boot", short: "👢", weight: 10, msg: "Sudo stares at it, very confused 👢" },
-            { id: "seaweed", name: "some seaweed", short: "🌿", weight: 8, msg: "Sudo wears it like a wig for a second 🌿" },
-            { id: "icecube", name: "an ice cube", short: "🧊", weight: 5, msg: "It's just ice. Sudo licks it anyway 🧊" }
+            { id: "boot", name: "an old boot", short: "👢", weight: 10, coins: 1, msg: "Sudo stares at it, very confused 👢" },
+            { id: "seaweed", name: "some seaweed", short: "🌿", weight: 8, coins: 1, msg: "Sudo wears it like a wig for a second 🌿" },
+            { id: "icecube", name: "an ice cube", short: "🧊", weight: 5, coins: 1, msg: "It's just ice. Sudo licks it anyway 🧊" }
         ],
         text: {
             intro: "Tap Cast, wait for a bite, then reel it in FAST.",
@@ -77,12 +93,7 @@
             log: name => `caught ${name} 🎣`,
             collected: "Caught",
             nothingYet: "Nothing caught yet. Tap <b>Fish!</b> to go fishing 🎣",
-            food: {
-                egg: "Sudo hasn't hatched yet, so you let it go 🐟",
-                asleep: "Sudo's asleep, so you let it swim off 🐟",
-                full: "He's too full, so you let it swim away 🐟",
-                ate: "Sudo gobbles it up! 🐟"
-            }
+            stored: "Into the bucket it goes 🪣"
         }
     },
 
@@ -160,7 +171,14 @@
             growIn: t => `Grows up in ${t} 🐣`,
             counts: [["feed", "Fish eaten"], ["pet", "Pets"], ["bathe", "Baths"], ["play", "Ball games"], ["scoop", "Poops scooped"]]
         },
-        debug: { poop: "Make him poop", zoomies: "Zoomies" }
+        debug: { poop: "Make him poop", zoomies: "Zoomies" },
+        pantry: {
+            title: "Fish bucket",
+            short: "fish bucket",
+            foot: "Tap something to feed it to him, or drag the Food button onto Sudo to feed him the next thing in the bucket.",
+            empty: "The fish bucket is empty! Go fishing 🎣 or visit the shop",
+            emptyLong: "The fish bucket is empty 🪣 Go catch some fish, or buy something nice in the shop."
+        }
     },
 
     // ---------- his world: the ice outside his igloo ----------

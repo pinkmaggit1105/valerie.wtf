@@ -299,7 +299,58 @@ def bowtie(c, g):
     c.set(b, n + 2, "blue")
 
 
-ACCESSORIES = [("tophat", tophat), ("bow", bow), ("partyhat", partyhat), ("flowers", flowers), ("crown", crown),
+def wizard(c, g):
+    t, h = g.head_top, g.hc
+    for x in range(h - 4, h + 5):
+        c.set(x, t, "wizarddk")
+    for i, half in enumerate((3, 2, 1)):
+        for x in range(h - half, h + half + 1):
+            c.set(x, t - 1 - i, "wizard")
+    c.set(h + 1, t - 4, "wizard")
+    c.set(h - 1, t - 1, "yellow"); c.set(h + 1, t - 2, "yellow")
+
+
+def chef(c, g):
+    t, h = g.head_top, g.hc
+    for x in range(h - 3, h + 4):
+        c.set(x, t, "shade")
+    c.ellipse(h + 0.5, t - 2, 4.6, 2.2, "white")
+    c.set(h - 2, t - 2, "shade"); c.set(h + 2, t - 2, "shade")
+
+
+def halo(c, g):
+    t, h = g.head_top - 2, g.hc
+    for x in range(h - 3, h + 4):
+        c.set(x, t - 1, "gold"); c.set(x, t + 1, "golddk")
+    c.set(h - 4, t, "gold"); c.set(h + 4, t, "gold")
+
+
+def pirate(c, g):
+    t, h = g.head_top, g.hc
+    for x in range(h - 5, h + 6):
+        c.set(x, t, "gold" if x % 2 else "pirate")
+    for y in range(t - 3, t):
+        for x in range(h - 3 + (t - 1 - y), h + 4 - (t - 1 - y)):
+            c.set(x, y, "pirate")
+    c.set(h, t - 2, "white"); c.set(h, t - 1, "white")
+
+
+def monocle(c, g):
+    x, y = g.eye_x, g.eye_y
+    for (mx, my) in ((x, y - 1), (x + 1, y - 1), (x - 1, y), (x + 2, y), (x - 1, y + 1), (x + 2, y + 1), (x, y + 2), (x + 1, y + 2)):
+        c.set(mx, my, "gold")
+    for i in range(4):
+        c.set(x - 1 - i // 2, y + 3 + i, "golddk")
+
+
+def pearls(c, g):
+    x0, x1, n = g.neck
+    for x in range(x0, x1 + 1):
+        c.set(x, n + 1, "pearl" if x % 2 else "pearlsh")
+
+
+ACCESSORIES = [("wizard", wizard), ("chef", chef), ("halo", halo), ("pirate", pirate), ("monocle", monocle), ("pearls", pearls),
+               ("tophat", tophat), ("bow", bow), ("partyhat", partyhat), ("flowers", flowers), ("crown", crown),
                ("sunhat", sunhat), ("shades", shades), ("heartshades", heartshades), ("scarf", scarf), ("bowtie", bowtie)]
 
 
@@ -416,6 +467,26 @@ def sock(c):
         c.set(x, 2, "white")
 
 
+def cake(c):
+    for y in range(6, 13):
+        for x in range(2, 14):
+            if x - 2 >= (12 - y) * 0.9:
+                c.set(x, y, "cream" if y in (9, 10) else "icecream" if y < 8 else "bread")
+    for x in range(5, 14):
+        c.set(x, 13, "breaddk")
+    c.ellipse(11, 4.5, 1.6, 1.6, "red")
+    c.set(11, 2, "leaf")
+
+
+def corn(c):
+    for y in range(3, 13):
+        for x in range(6, 10):
+            c.set(x, y, "yellow" if (x + y) % 2 else "gold")
+    for y in range(8, 15):
+        c.set(4 + (y - 8) // 3, y, "leaf"); c.set(5 + (y - 8) // 3, y, "leafdk")
+        c.set(11 - (y - 8) // 3, y, "leaf"); c.set(10 - (y - 8) // 3, y, "leafdk")
+
+
 def build(out):
     def mood(name, eye_kind, extras=None, frames=2, mouth_open=False, cheeks=True, fat=0):
         for prefix, draw in STAGES.items():
@@ -491,3 +562,5 @@ def build(out):
     out.prop("keys", keys)
     out.prop("phone", phone)
     out.prop("sock", sock)
+    out.prop("cake", cake)
+    out.prop("corn", corn)

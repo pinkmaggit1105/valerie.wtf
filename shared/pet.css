@@ -389,6 +389,59 @@ h1 { margin: 0; font-size: 30px; line-height: 1; font-weight: 700; letter-spacin
 .debug .note { color: var(--muted); margin: 0; }
 .debug .danger { border-color: var(--bad) !important; color: var(--bad); }
 
+/* ---------- coins, pantry, shop ---------- */
+
+.coin-btn { display: flex; align-items: center; gap: 5px; }
+.coin-btn img, .wallet img, .price img, .coin-pop img { width: 16px; height: 16px; image-rendering: pixelated; }
+.coin-btn b, .wallet, .price { font-family: var(--mono); font-size: 19px; font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
+.wallet { display: flex; align-items: center; gap: 5px; margin-left: auto; }
+
+.item { position: relative; }
+.badge {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    min-width: 20px;
+    padding: 0 4px;
+    font-family: var(--mono);
+    font-size: 17px;
+    line-height: 16px;
+    text-align: center;
+    background: var(--beak);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+}
+.badge[data-empty] { background: var(--bad); color: var(--text); }
+
+.coin-pop {
+    position: absolute;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    font-size: 26px;
+    color: var(--warn);
+    text-shadow: 0 2px 0 var(--ink);
+    pointer-events: none;
+    animation: float-up 1.2s ease-out forwards;
+}
+.coin-pop img { width: 22px; height: 22px; }
+
+.shop { grid-template-rows: auto auto 1fr auto; }
+.tabs { display: flex; gap: 6px; }
+.tab {
+    font-size: 15px;
+    padding: 5px 14px;
+    background: #1d2449;
+    border: 2px solid var(--panel-line);
+    cursor: pointer;
+}
+.tab[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); }
+.price { display: flex; align-items: center; gap: 4px; color: var(--warn); }
+.empty-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.empty-actions .cast-btn { min-width: 140px; }
+
 @media (max-width: 480px) {
     .app { gap: 10px; padding-block: 10px; }
     h1 { font-size: 24px; }

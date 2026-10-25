@@ -28,8 +28,18 @@
         egg:      ["Egg", "good", "Tap the egg to keep it warm. It hatches when the Hatching bar fills up."]
     },
 
+    // what she can eat. Strawberries and sandwiches come from raiding the picnic or the shop.
+    foods: [
+        { id: "lettuce", name: "Lettuce", sprite: "lettuce", food: 25, price: 3, log: "ate some lettuce 🥬" },
+        { id: "strawberry", name: "Strawberry", sprite: "strawberry", food: 20, fun: 5, price: 4, log: "ate a strawberry 🍓", say: "She eats it in one gulp 🍓" },
+        { id: "corn", name: "Corn", sprite: "corn", food: 30, fun: 5, price: 5, log: "ate some corn 🌽", say: "She shucks it herself. Somehow 🌽" },
+        { id: "sandwich", name: "Sandwich", sprite: "sandwich", food: 40, fun: 10, price: 8, log: "ate a whole sandwich 🥪", say: "It was someone's lunch. Now it's hers 🥪" },
+        { id: "cake", name: "Cake", sprite: "cake", food: 50, fun: 25, price: 15, log: "ate a slice of cake 🎂", say: "She ate the whole slice in one bite 🎂 No regrets" }
+    ],
+    starterPantry: { lettuce: 5 },
+
     items: [
-        { id: "lettuce", label: "Lettuce", sprite: "lettuce", action: "feed" },
+        { id: "food", label: "Food", sprite: "lettuce", action: "feed" },
         { id: "can", label: "Splash", sprite: "can", action: "bathe", scrub: true },
         { id: "bell", label: "Bell", sprite: "bell", action: "play" },
         { id: "pill", label: "Meds", sprite: "pill", action: "heal" }
@@ -45,7 +55,13 @@
         { id: "shades", name: "Shades", slot: "face" },
         { id: "heartshades", name: "Heart shades", slot: "face" },
         { id: "scarf", name: "Scarf", slot: "neck" },
-        { id: "bowtie", name: "Bow tie", slot: "neck" }
+        { id: "bowtie", name: "Bow tie", slot: "neck" },
+        { id: "chef", name: "Chef's hat", slot: "head", price: 30 },
+        { id: "monocle", name: "Monocle", slot: "face", price: 35 },
+        { id: "pearls", name: "Pearls", slot: "neck", price: 40 },
+        { id: "pirate", name: "Pirate hat", slot: "head", price: 45 },
+        { id: "wizard", name: "Wizard hat", slot: "head", price: 50 },
+        { id: "halo", name: "Halo", slot: "head", price: 60 }
     ],
 
     // the picnic: wait for the people to look away, then snatch something
@@ -57,13 +73,13 @@
         debugRare: "Sun hat next snatch",
         debugQuick: "Instant openings",
         catches: [
-            { id: "strawberry", name: "a strawberry", short: "🍓", weight: 50, food: 20 },
-            { id: "sandwich", name: "a whole sandwich", short: "🥪", weight: 18, food: 35, fun: 10 },
-            { id: "sunhat", name: "a sun hat", short: "👒", weight: 4, rare: "sunhat",
+            { id: "strawberry", name: "a strawberry", short: "🍓", weight: 50, pantry: "strawberry", coins: 2 },
+            { id: "sandwich", name: "a whole sandwich", short: "🥪", weight: 18, pantry: "sandwich", coins: 4 },
+            { id: "sunhat", name: "a sun hat", short: "👒", weight: 4, rare: "sunhat", coins: 25,
               firstMsg: "You unlocked the Sun hat in the Wardrobe!! 👒", againMsg: "Another hat. The park is running out of hats 👒" },
-            { id: "keys", name: "the groundskeeper's keys", short: "🔑", weight: 12, msg: "Puck jingles them menacingly 🔑" },
-            { id: "phone", name: "someone's phone", short: "📱", weight: 8, msg: "Puck drops it straight into the pond 📱💦" },
-            { id: "sock", name: "a single sock", short: "🧦", weight: 8, msg: "Puck treasures it forever 🧦" }
+            { id: "keys", name: "the groundskeeper's keys", short: "🔑", weight: 12, coins: 3, msg: "Puck jingles them menacingly 🔑" },
+            { id: "phone", name: "someone's phone", short: "📱", weight: 8, coins: 3, msg: "Puck drops it straight into the pond 📱💦" },
+            { id: "sock", name: "a single sock", short: "🧦", weight: 8, coins: 1, msg: "Puck treasures it forever 🧦" }
         ],
         text: {
             intro: "Sneak up on the picnic. Wait for them to look away, then SNATCH.",
@@ -76,12 +92,7 @@
             log: name => `stole ${name} 🧺`,
             collected: "Stolen",
             nothingYet: "Nothing stolen yet. Tap <b>Snatch!</b> to raid the picnic 🧺",
-            food: {
-                egg: "Puck hasn't hatched yet, so you sneak it back 🧺",
-                asleep: "Puck's asleep, so you leave it by her nest for later",
-                full: "She's too full, so she just guards it jealously",
-                ate: "Puck gobbles it up! HONK"
-            }
+            stored: "Into the stash it goes 🧺"
         }
     },
 
@@ -167,7 +178,14 @@
             growIn: t => `Grows up in ${t} 🐣`,
             counts: [["feed", "Lettuce eaten"], ["pet", "Pets"], ["bathe", "Splashes"], ["play", "Bell rings"], ["scoop", "Poops scooped"]]
         },
-        debug: { poop: "Make her poop", zoomies: "Honk rampage" }
+        debug: { poop: "Make her poop", zoomies: "Honk rampage" },
+        pantry: {
+            title: "Snack stash",
+            short: "snack stash",
+            foot: "Tap something to feed it to her, or drag the Food button onto Puck to feed her the next thing in the stash.",
+            empty: "The snack stash is empty! Raid the picnic 🧺 or visit the shop",
+            emptyLong: "The snack stash is empty 🧺 Go raid the picnic, or buy something nice in the shop."
+        }
     },
 
     // ---------- her world: the pond in the park ----------

@@ -67,6 +67,18 @@ PAL = {
     "bread": (226, 170, 96, 255),
     "breaddk": (180, 120, 60, 255),
     "metal": (176, 184, 200, 255),
+    "rice": (250, 250, 244, 255),
+    "salmon": (250, 140, 100, 255),
+    "nori": (30, 52, 40, 255),
+    "cone": (214, 152, 82, 255),
+    "conedk": (170, 110, 54, 255),
+    "icecream": (255, 176, 206, 255),
+    "cream": (255, 240, 214, 255),
+    "wizard": (90, 70, 190, 255),
+    "wizarddk": (60, 44, 140, 255),
+    "pirate": (40, 30, 26, 255),
+    "pearl": (250, 246, 240, 255),
+    "pearlsh": (214, 206, 220, 255),
 }
 
 
@@ -338,6 +350,14 @@ def poop(c):
     c.set(7, 13, "eye"); c.set(8, 13, "eye")
 
 
+def coin(c):
+    c.ellipse(7.5, 7.5, 5.6, 5.6, "golddk")
+    c.ellipse(7.5, 7.5, 4.4, 4.4, "gold")
+    for y in range(5, 11):
+        c.set(7, y, "golddk")
+    c.set(5, 5, "white"); c.set(5, 6, "white")
+
+
 def common_props(out):
     """Items and particles every pet uses."""
     out.prop("heart", lambda c: heart_px(c, 6, 6))
@@ -346,3 +366,4 @@ def common_props(out):
     out.prop("poop", poop)
     out.prop("bubble", bubble, outline=False)
     out.prop("sparkle", sparkle, outline=False)
+    out.prop("coin", coin)

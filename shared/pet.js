@@ -27,6 +27,7 @@
             </div>
             <div class="buttons">
                 <button class="icon-btn" id="debugBtn" type="button" hidden>Debug</button>
+                <button class="icon-btn coin-btn" id="shopBtn" type="button" aria-label="Shop"><img src="${BASE}coin.png" alt=""><b id="coins">0</b></button>
                 <button class="icon-btn" id="soundBtn" type="button" aria-pressed="true" aria-label="Sound is on">♪</button>
                 <button class="icon-btn" id="closetBtn" type="button">Wardrobe</button>
                 <button class="icon-btn" id="diaryBtn" type="button">Diary</button>
@@ -48,7 +49,9 @@
         </section>
 
         <nav class="tray" id="tray" aria-label="Things to give ${C.name}">
-            ${C.items.map(it => `<button class="item" type="button" data-item="${it.id}"><img src="${BASE}${it.sprite}.png" alt="">${it.label}</button>`).join("")}
+            ${C.items.map(it => it.action === "feed"
+                ? `<button class="item" type="button" data-item="${it.id}" id="foodBtn"><img src="${BASE}${it.sprite}.png" alt="">${it.label}<span class="badge" id="foodCount"></span></button>`
+                : `<button class="item" type="button" data-item="${it.id}"><img src="${BASE}${it.sprite}.png" alt="">${it.label}</button>`).join("")}
             <button class="item" type="button" id="activityBtn"><img src="${BASE}${A.button.sprite}.png" alt="">${A.button.label}</button>
             <button class="item" type="button" id="sleepBtn" aria-pressed="false"><img src="${BASE}moon.png" alt=""><span>Sleep</span></button>
         </nav>
@@ -70,6 +73,29 @@
         </div>
         <div class="closet" id="closetGrid"></div>
         <div class="foot">${T.closet.foot}</div>
+    </aside>
+
+    <aside class="sheet" id="pantry" hidden aria-label="${T.pantry.title}">
+        <div class="sheet-head">
+            <h2>${T.pantry.title}</h2>
+            <button class="icon-btn" type="button" data-close="pantry">Close</button>
+        </div>
+        <div class="closet" id="pantryGrid"></div>
+        <div class="foot">${T.pantry.foot}</div>
+    </aside>
+
+    <aside class="sheet shop" id="shop" hidden aria-label="Shop">
+        <div class="sheet-head">
+            <h2>Shop</h2>
+            <span class="wallet" id="shopCoins"></span>
+            <button class="icon-btn" type="button" data-close="shop">Close</button>
+        </div>
+        <div class="tabs">
+            <button type="button" class="tab" data-tab="food" aria-pressed="true">Food</button>
+            <button type="button" class="tab" data-tab="fashion" aria-pressed="false">Fashion</button>
+        </div>
+        <div class="closet" id="shopGrid"></div>
+        <p class="foot" id="shopMsg" role="status" aria-live="polite"></p>
     </aside>
 
     <aside class="sheet minigame" id="activity" hidden aria-label="${A.title}">
@@ -132,6 +158,9 @@
                 <button type="button" data-fun="star">Shooting star</button>
                 <button type="button" data-fun="passer">${C.world.passer.debugLabel}</button>
                 <button type="button" data-fun="zoomies">${T.debug.zoomies}</button>
+                <button type="button" data-fun="coins">+100 coins</button>
+                <button type="button" data-fun="fill">Fill the ${T.pantry.short}</button>
+                <button type="button" data-fun="daily">Daily bonus again</button>
             </div>
         </section>
         <section>
@@ -212,6 +241,7 @@
         clean: [[700, .05], [1000, .08]],
         wear: [[784, .06], [1175, .1]],
         nope: [[200, .08], [160, .1]],
+        coin: [[988, .05], [1319, .12]],
         zoomies: [[523, .04], [659, .04], [784, .04], [1047, .04], [784, .04], [1047, .04], [1319, .1]]
     }, C.sounds);
     const SFX = Object.assign({ feed: "chomp", pet: "pet", play: "ball", zoomies: "zoomies", start: "splash" }, C.sfx);
@@ -265,10 +295,15 @@
             m.style.width = v + "%";
             m.dataset.level = k === "progress" ? "good" : level(v);
         }
-        const [text, lvl, hint] = core.moodInfo(S, C);
+        let [text, lvl, hint] = core.moodInfo(S, C);
+        const food = pantryTotal();
+        if (S.hatched && core.mood(S) === "idle_hungry" && !food) hint = T.pantry.empty;
         $("mood").textContent = text;
         $("mood").dataset.level = lvl;
         $("hint").textContent = hint;
+        $("foodCount").textContent = food;
+        $("foodCount").toggleAttribute("data-empty", !food);
+        $("foodBtn").querySelector("img").src = `${BASE}${(FOODS[nextFood()] || C.foods[0]).sprite}.png`;
         $("age").textContent = core.ageText(S, C);
         $("tray").classList.toggle("locked", !S.hatched);
         $("sleepBtn").setAttribute("aria-pressed", S.asleep);
@@ -279,11 +314,13 @@
             animate("hatch", 2400);
             sfx("hatch");
             say(T.hatched, 4500);
+            setTimeout(() => earn(20), 2600);
             setTimeout(() => burst("sparkle", 5), 1600);
         } else if (events.grewUp) {
             events.grewUp = false;
             sfx("grow");
             say(T.grewUp, 4500);
+            earn(50);
             burst("sparkle", 5);
         }
         if (events.pooped) {
@@ -365,8 +402,10 @@
     function digest() { if (!S.nextPoop) S.nextPoop = Date.now() + (3 + Math.random() * 5) * 6e4; }
 
     const ACTIONS = {
-        feed() {
+        feed(foodId) {
             if (S.asleep) return say(T.feed.asleep);
+            const f = FOODS[foodId || nextFood()];
+            if (!f || !S.pantry[f.id]) { sfx("nope"); return say(T.pantry.empty); }
             if (S.stats.food >= 92) {
                 S.overfedUntil = Date.now() + 5 * 6e4;
                 bump("fun", -5);
@@ -374,18 +413,23 @@
                 sfx("nope");
                 return say(T.feed.full);
             }
-            bump("food", 25);
+            const hungry = S.stats.food < 70;
+            S.pantry[f.id]--;
+            bump("food", f.food);
+            bump("fun", f.fun || 0);
             bump("health", 2);
             count("feed");
-            logEvent(T.feed.log);
+            logEvent(f.log);
             digest();
             animate("eat", 1200);
             sfx(SFX.feed);
-            say(pick(T.feed.says));
+            say(f.say || pick(T.feed.says));
+            if (hungry) earn(2);
         },
 
         pet() {
             if (!S.hatched) {
+                if (S.egg.warmth < 60) earn(1);
                 S.egg.warmth = core.clamp(S.egg.warmth + 12);
                 burst("heart", 2);
                 sfx("egg");
@@ -393,6 +437,7 @@
             }
             count("pet");
             if (S.asleep) { bump("fun", 3); burst("heart", 1); return say(T.pet.asleep); }
+            if (S.stats.fun < 60) earn(1);
             bump("fun", 10);
             logEvent(T.pet.log);
             animate("pet", 1600);
@@ -404,6 +449,7 @@
         bathe() {
             if (S.asleep) return say(T.bathe.asleep);
             const wasStinky = S.stats.clean < 30;
+            if (S.stats.clean < 60) earn(2);
             S.stats.clean = 100;
             bump("fun", 5);
             count("bathe");
@@ -418,6 +464,7 @@
             if (S.asleep) return say(T.play.asleep);
             if (S.stats.health < 40) return say(T.play.sick);
             if (S.stats.energy < 15) return say(T.play.tired);
+            if (S.stats.fun < 70) earn(2);
             bump("fun", 20);
             bump("energy", -12);
             bump("food", -5);
@@ -432,6 +479,7 @@
         heal() {
             if (S.asleep) return say(T.heal.asleep);
             if (S.stats.health >= 70) return say(T.heal.healthy);
+            earn(3);
             bump("health", 40);
             count("heal");
             logEvent(T.heal.log);
@@ -463,6 +511,7 @@
         bump("fun", 2);
         count("scoop");
         sfx("clean");
+        earn(2);
         say(pick(T.scoop));
         save();
         renderHud();
@@ -470,10 +519,10 @@
 
     document.querySelectorAll(".poop").forEach(el => el.addEventListener("click", cleanPoop));
 
-    function act(name) {
+    function act(name, arg) {
         tick();
         if (!S.hatched && name !== "pet") { say(T.stillEgg); sfx("nope"); }
-        else ACTIONS[name]();
+        else ACTIONS[name](arg);
         save();
         renderHud();
     }
@@ -509,9 +558,12 @@
         return [r.left + r.width / 2, r.top + r.height * 0.55];
     }
 
-    // tapping (or pressing Enter on) an item tosses it over
+    const spriteFor = it => it.action === "feed" ? (FOODS[nextFood()] || C.foods[0]).sprite : it.sprite;
+
+    // tapping (or pressing Enter on) an item tosses it over. The food button opens the pantry instead.
     function toss(btn) {
         const it = ITEM[btn.dataset.item];
+        if (it.action === "feed") return openSheet("pantry", renderPantry);
         const r = btn.getBoundingClientRect();
         const g = makeGhost(it.sprite, r.left + r.width / 2, r.top + r.height / 2);
         const [x, y] = petCenter();
@@ -533,7 +585,7 @@
             if (!drag || drag.btn !== btn) return;
             if (!drag.ghost) {
                 if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
-                drag.ghost = makeGhost(it.sprite, e.clientX, e.clientY);
+                drag.ghost = makeGhost(spriteFor(it), e.clientX, e.clientY);
                 btn.classList.add("dragging");
             }
             drag.ghost.style.left = e.clientX + "px";
@@ -584,6 +636,7 @@
         bump("fun", 15);
         bump("energy", -5);
         count("zoomies");
+        earn(3);
         logEvent(T.zoomies.log);
         sfx(SFX.zoomies);
         say(T.zoomies.say);
@@ -602,7 +655,7 @@
 
     // ---------- sheets ----------
 
-    const SHEETS = ["diary", "closet", "activity", "debug"];
+    const SHEETS = ["diary", "closet", "pantry", "shop", "activity", "debug"];
 
     function openSheet(id, render) {
         for (const other of SHEETS) if (other !== id) $(other).hidden = true;
@@ -663,9 +716,134 @@
 
     $("diaryBtn").addEventListener("click", () => openSheet("diary", renderDiary));
 
+    // ---------- coins, the pantry and the shop ----------
+
+    const FOODS = Object.fromEntries(C.foods.map(f => [f.id, f]));
+    const nextFood = () => (C.foods.find(f => S.pantry[f.id] > 0) || {}).id;
+    const pantryTotal = () => C.foods.reduce((n, f) => n + (S.pantry[f.id] || 0), 0);
+    const foodText = f => `+${f.food} food${f.fun ? `, +${f.fun} fun` : ""}`;
+
+    function renderCoins() {
+        const coins = core.loadWallet().coins;
+        $("coins").textContent = coins;
+        $("shopBtn").setAttribute("aria-label", `Shop. You have ${coins} coins`);
+        $("shopCoins").innerHTML = `<img src="${BASE}coin.png" alt=""> ${coins}`;
+    }
+
+    // a little "+2" that floats off the pet
+    function coinPop(text) {
+        const box = petEl.getBoundingClientRect(), scene = sceneEl.getBoundingClientRect();
+        const el = document.createElement("div");
+        el.className = "coin-pop";
+        el.innerHTML = `<img src="${BASE}coin.png" alt="">${text}`;
+        el.style.left = (box.right - scene.left - box.width * 0.2) + "px";
+        el.style.top = (box.top - scene.top + box.height * 0.1) + "px";
+        sceneEl.appendChild(el);
+        setTimeout(() => el.remove(), 1300);
+    }
+
+    function earn(n) {
+        if (!n) return;
+        core.changeCoins(n);
+        renderCoins();
+        coinPop(`+${n}`);
+        setTimeout(() => sfx("coin"), 180);
+    }
+
+    function renderPantry() {
+        const grid = $("pantryGrid");
+        grid.innerHTML = "";
+        const have = C.foods.filter(f => S.pantry[f.id] > 0);
+        if (!have.length) {
+            grid.innerHTML = `<p class="empty">${T.pantry.emptyLong}</p>
+                <div class="empty-actions">
+                    <button class="cast-btn" type="button" data-go="activity">${A.button.label}</button>
+                    <button class="cast-btn" type="button" data-go="shop">Shop</button>
+                </div>`;
+            grid.querySelector('[data-go="activity"]').addEventListener("click", () => openSheet("activity", resetPond));
+            grid.querySelector('[data-go="shop"]').addEventListener("click", () => openShop("food"));
+            return;
+        }
+        for (const f of have) {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "acc-tile";
+            b.innerHTML = `<span class="mini"><img src="${BASE}${f.sprite}.png" alt=""></span>${f.name} ×${S.pantry[f.id]}<small>${foodText(f)}</small>`;
+            b.addEventListener("click", () => {
+                $("pantry").hidden = true;
+                const r = $("foodBtn").getBoundingClientRect();
+                const g = makeGhost(f.sprite, r.left + r.width / 2, r.top + r.height / 2);
+                const [x, y] = petCenter();
+                flyTo(g, x, y, () => act("feed", f.id));
+            });
+            grid.appendChild(b);
+        }
+    }
+
+    let shopTab = "food";
+
+    function openShop(tab) {
+        shopTab = tab;
+        $("shopMsg").textContent = "";
+        openSheet("shop", renderShop);
+    }
+
+    function renderShop() {
+        renderCoins();
+        document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-pressed", t.dataset.tab === shopTab));
+        const coins = core.loadWallet().coins;
+        const grid = $("shopGrid");
+        grid.innerHTML = "";
+        const prefix = stage() === "baby" ? "baby_" : "";
+        const goods = shopTab === "food" ? C.foods.filter(f => f.price) : C.accessories.filter(a => a.price);
+        for (const g of goods) {
+            const owned = shopTab === "fashion" && S.owned[g.id];
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "acc-tile";
+            b.setAttribute("aria-disabled", !owned && coins < g.price);
+            const pic = shopTab === "food"
+                ? `<img src="${BASE}${g.sprite}.png" alt="">`
+                : `<img src="${BASE}${prefix}idle_happy_1.png" alt=""><img src="${BASE}${prefix}acc_${g.id}.png" alt="">`;
+            const detail = shopTab === "food" ? `${foodText(g)} · you have ${S.pantry[g.id] || 0}` : "";
+            b.innerHTML = `<span class="mini">${pic}</span>${g.name}${detail ? `<small>${detail}</small>` : ""}
+                <span class="price">${owned ? "Owned ✓" : `<img src="${BASE}coin.png" alt="">${g.price}`}</span>`;
+            b.addEventListener("click", () => buy(g));
+            grid.appendChild(b);
+        }
+    }
+
+    function buy(g) {
+        const food = shopTab === "food";
+        if (!food && S.owned[g.id]) { $("shopMsg").textContent = `${g.name}: already yours! Put it on in the Wardrobe ✨`; return; }
+        const coins = core.loadWallet().coins;
+        if (coins < g.price) {
+            sfx("nope");
+            $("shopMsg").textContent = `You need ${g.price - coins} more coins for the ${g.name.toLowerCase()}. Look after your pets and play the minigames to earn more 🪙`;
+            return;
+        }
+        core.changeCoins(-g.price);
+        if (food) {
+            S.pantry[g.id] = (S.pantry[g.id] || 0) + 1;
+            $("shopMsg").textContent = `Bought ${g.name.toLowerCase()}! It's in the ${T.pantry.short} 🛍️`;
+        } else {
+            S.owned[g.id] = true;
+            logEvent(`got the ${g.name.toLowerCase()} from the shop 🛍️`);
+            $("shopMsg").textContent = `The ${g.name.toLowerCase()} is yours! Put it on in the Wardrobe ✨`;
+        }
+        sfx("coin");
+        save();
+        renderShop();
+        renderHud();
+    }
+
+    document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => { shopTab = t.dataset.tab; $("shopMsg").textContent = ""; renderShop(); }));
+    $("shopBtn").addEventListener("click", () => openShop("food"));
+
     // ---------- wardrobe ----------
 
-    const unlocked = a => !a.unlock || debug.unlockAll || (a.unlock === "adult" ? stage() === "adult" : S.flags[a.unlock]);
+    const unlocked = a => debug.unlockAll || (a.price ? S.owned[a.id] : !a.unlock || (a.unlock === "adult" ? stage() === "adult" : S.flags[a.unlock]));
+    const lockedText = a => a.price ? `In the shop for ${a.price} coins` : a.lockedText;
 
     function renderCloset() {
         const grid = $("closetGrid");
@@ -682,14 +860,15 @@
             b.setAttribute("aria-pressed", S.wearing[a.slot] === a.id);
             b.setAttribute("aria-disabled", !unlocked(a));
             b.innerHTML = `<span class="mini"><img src="${BASE}${prefix}idle_happy_1.png" alt=""><img src="${BASE}${prefix}acc_${a.id}.png" alt=""></span>${a.name}`;
-            if (!unlocked(a)) b.insertAdjacentHTML("beforeend", `<small>${a.lockedText}</small>`);
+            if (!unlocked(a)) b.insertAdjacentHTML("beforeend", `<small>${lockedText(a)}</small>`);
             b.addEventListener("click", () => wear(a));
             grid.appendChild(b);
         }
     }
 
     function wear(a) {
-        if (!unlocked(a)) { sfx("nope"); return say(`${a.name}: ${a.lockedText.toLowerCase()} 🔒`); }
+        if (!unlocked(a) && a.price) return openShop("fashion");
+        if (!unlocked(a)) { sfx("nope"); return say(`${a.name}: ${lockedText(a).toLowerCase()} 🔒`); }
         if (S.wearing[a.slot] === a.id) {
             delete S.wearing[a.slot];
             say(T.closet.takeOff(a.name.toLowerCase()));
@@ -755,25 +934,15 @@
         return table.find(c => (r -= c.weight) < 0) || table[0];
     }
 
-    // what happens to food once it's caught
-    function offerFood(food, fun) {
-        if (!S.hatched) return AT.food.egg;
-        if (S.asleep) return AT.food.asleep;
-        if (S.stats.food >= 92) return AT.food.full;
-        bump("food", food);
-        bump("fun", fun);
-        count("feed");
-        digest();
-        animate("eat", 1200);
-        return AT.food.ate;
-    }
-
     function grab() {
         const c = roll();
         S.catches[c.id] = (S.catches[c.id] || 0) + 1;
         logEvent(AT.log(c.name));
         let msg;
-        if (c.food) msg = offerFood(c.food, c.fun || 0);
+        if (c.pantry) {
+            S.pantry[c.pantry] = (S.pantry[c.pantry] || 0) + 1;
+            msg = AT.stored;
+        }
         else if (c.rare) {
             const first = !S.flags[c.rare];
             S.flags[c.rare] = true;
@@ -784,7 +953,10 @@
             msg = c.msg;
         }
         sfx("catch");
-        setPond("result", c.sprite || c.id, AT.got(c.name, msg), AT.buttons.again);
+        const paid = c.coins ? core.earnFromGame(c.coins) : 0;
+        if (paid) { renderCoins(); setTimeout(() => sfx("coin"), 200); }
+        const coins = !c.coins ? "" : paid ? ` +${paid} coins` : " (the minigame has paid out all its coins for today)";
+        setPond("result", c.sprite || c.id, AT.got(c.name, msg) + coins, AT.buttons.again);
         save();
         renderHud();
     }
@@ -1032,7 +1204,15 @@
         quick() { debug.quick = !debug.quick; },
         star() { world.star = { x: world.W * 0.1, y: world.G * 0.1, life: 0 }; if (phase() !== "night") say("Shooting stars only show up at night. Set the sky to Night 🌙"); },
         passer() { if (reduceMotion) return say("Your device asks for reduced motion, so nobody walks by"); sendPasser(); },
-        zoomies() { if (!S.hatched) return say(T.stillEgg); zoomies(); }
+        zoomies() { if (!S.hatched) return say(T.stillEgg); zoomies(); },
+        coins() { core.changeCoins(100); renderCoins(); },
+        fill() { for (const f of C.foods) S.pantry[f.id] = (S.pantry[f.id] || 0) + 3; },
+        daily() {
+            const w = core.loadWallet();
+            w.lastDay = "";
+            core.saveWallet(w);
+            say("The daily bonus pays out again next time you open a pet");
+        }
     };
 
     document.querySelectorAll("[data-stage]").forEach(b => b.addEventListener("click", () => debugDo(() => setStage(b.dataset.stage))));
@@ -1060,7 +1240,7 @@
         }
         resetArmed = 0;
         $("dbgReset").textContent = `Reset ${C.name}`;
-        S = core.fresh();
+        S = core.fresh(C);
         logEvent(T.log.foundEgg);
         save();
         hudStage = null;
@@ -1088,13 +1268,22 @@
         setTimeout(() => say(`Welcome back! ${core.moodInfo(S, C)[2]}`, 3500), 400);
     }
 
+    const daily = core.claimDaily();
+    if (daily) setTimeout(() => {
+        say(`📅 Daily bonus: +${daily.bonus} coins${daily.streak > 1 ? ` (${daily.streak} days in a row!)` : ""}`, 4000);
+        coinPop(`+${daily.bonus}`);
+        sfx("coin");
+    }, isNew ? 5600 : 3900);
+
     layout();
+    renderCoins();
     renderHud();
     renderSprite();
     requestAnimationFrame(loop);
     setInterval(renderSprite, 100);
     setInterval(() => { tick(); renderHud(); }, 10000);
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); renderHud(); } });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); renderHud(); renderCoins(); } });
+    addEventListener("storage", e => { if (e.key === "pets-wallet") renderCoins(); });
 
     // handy for poking at things from the browser console and for tests
     window.pet = { get state() { return S; }, world, debug };

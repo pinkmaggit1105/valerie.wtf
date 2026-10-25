@@ -25,7 +25,7 @@ Drag an item from the tray onto your pet, or just tap it and it flies over:
 
 | Sudo | Puck | What it does |
 | --- | --- | --- |
-| 🐟 Fish | 🥬 Lettuce | Feeds them. Feed them when they're full and they get a tummy ache 🤢 |
+| 🐟 Food | 🥬 Food | Feeds them from their pantry (tap it to pick what). Feed them when they're full and they get a tummy ache 🤢 |
 | 🧼 Soap | 💦 Splash | Bath time. Scrub them with it and bubbles come off |
 | 🎾 Ball | 🔔 Bell | Play. Makes them happy, but uses up energy and food |
 | 💊 Meds | 💊 Meds | Only does anything when they're sick |
@@ -36,9 +36,20 @@ Tap your pet to pet them 🥰
 
 Their food, fun, cleanliness and energy go down over time, even while the tab is closed, so come back and check on them. A full tummy lasts about half a day. Left hungry or dirty for too long, they get sick 🤒. A few minutes after eating, they poop 💩: tap it to clean it up, because poop lying around makes them dirty and a lot of it makes them ill.
 
-**Minigames.** Both work the same way: start, wait for the moment, then tap fast. Too early and it's ruined, too late and it's gone. Food they win gets eaten if they're hungry. Each game has a rare prize that unlocks an accessory (Sudo's golden fish unlocks a fish hat, Puck's stolen sun hat unlocks the sun hat), and the odds go up if you've been unlucky for a while.
+**Pantry.** Food comes out of each pet's pantry: Sudo's fish bucket 🪣 and Puck's snack stash 🧺. Everyone starts with 5 of their basic food. Fish, strawberries and sandwiches you win in the minigames go into the pantry, and fancier treats come from the shop. Run out and the pantry points you to the minigame or the shop.
 
-**Wardrobe.** Sudo has 12 accessories and Puck has 10, each in a baby size and a grown-up size. They can wear one hat, one pair of shades and one neck thing at once. The crown unlocks when they grow up.
+**Minigames.** Both work the same way: start, wait for the moment, then tap fast. Too early and it's ruined, too late and it's gone. Each game has a rare prize that unlocks an accessory (Sudo's golden fish unlocks a fish hat, Puck's stolen sun hat unlocks the sun hat), and the odds go up if you've been unlucky for a while.
+
+**Coins and the shop 🪙** One coin purse is shared by every pet, and it shows on the home page and in each pet's header (tap it to open the shop). You earn coins by:
+
+- **Looking after them when they need it:** feeding a hungry pet, bathing a dirty one, playing with a bored one, medicine when they're sick, scooping poop, warming a cold egg. Doing it when they don't need it earns nothing
+- **Minigames:** every catch pays a few coins, and the rare prize pays 25. They pay out up to 60 coins a day
+- **Visiting every day:** a daily bonus of 10 coins, plus 5 more for each day in a row (up to 40)
+- **Milestones:** 20 when they hatch, 50 when they grow up
+
+The shop sells treats (Sudo: fish, big fish, ice cream, fish tacos, a sushi platter; Puck: lettuce, strawberries, corn, sandwiches, cake) and six shop-only accessories for each pet: a chef's hat, monocle, pearls, pirate hat, wizard hat and halo.
+
+**Wardrobe.** Sudo has 18 accessories and Puck has 16, each in a baby size and a grown-up size. They can wear one hat, one pair of shades and one neck thing at once. The crown unlocks when they grow up, the fish hat and sun hat come from the minigames, and six come from the shop.
 
 **Their worlds** follow your clock: dawn, day, dusk, and night with stars and shooting stars. It's always night while they sleep. Sudo has an aurora, falling snow, a snowman and penguins waddling past. Puck has fireflies, falling leaves, a lamp post, a bench, the picnic she keeps robbing, and ducks paddling across the pond with their ducklings.
 
@@ -48,7 +59,7 @@ Each pet lives in your browser (`localStorage`), so everyone has their own.
 
 ### Debug mode 🐞
 
-Add `#debug` to a pet's address ([valerie.wtf/sudo/#debug](https://valerie.wtf/sudo/#debug), [valerie.wtf/puck/#debug](https://valerie.wtf/puck/#debug)) and a **Debug** button appears. It can switch stages, skip time, set any stat, trigger moods and animations, make them poop, rig the minigame's rare prize, make the minigame instant, send a shooting star or passers-by, change the sky, unlock every accessory, turn the weather off, and reset back to an egg. It changes your real saved pet.
+Add `#debug` to a pet's address ([valerie.wtf/sudo/#debug](https://valerie.wtf/sudo/#debug), [valerie.wtf/puck/#debug](https://valerie.wtf/puck/#debug)) and a **Debug** button appears. It can switch stages, skip time, set any stat, trigger moods and animations, make them poop, rig the minigame's rare prize, make the minigame instant, add 100 coins, fill the pantry, get the daily bonus again, send a shooting star or passers-by, change the sky, unlock every accessory, turn the weather off, and reset back to an egg. It changes your real saved pet.
 
 ## How it's built
 

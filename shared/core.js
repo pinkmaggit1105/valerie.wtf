@@ -17,14 +17,14 @@
 
     const clamp = v => Math.max(0, Math.min(100, v));
 
-    function fresh() {
+    function fresh(cfg) {
         const now = Date.now();
         return {
             laid: now, born: now, last: now, hatched: false, asleep: false, overfedUntil: 0, grown: false,
             egg: { warmth: 70, progress: 0 },
             stats: { food: 70, fun: 70, clean: 90, energy: 80, health: 100 },
             poops: 0, nextPoop: 0, flags: {},
-            wearing: {}, counts: {}, catches: {}, log: []
+            wearing: {}, owned: {}, pantry: { ...(cfg && cfg.starterPantry) }, counts: {}, catches: {}, log: []
         };
     }
 
@@ -32,7 +32,7 @@
         let s = null;
         try { s = JSON.parse(localStorage.getItem(cfg.saveKey)); } catch (e) {}
         const isNew = !s || !s.stats;
-        if (isNew) s = fresh();
+        if (isNew) s = fresh(cfg);
         // fill in anything older saves don't have yet
         if (s.hatched === undefined) s.hatched = true;
         s.egg ||= { warmth: 0, progress: 100 };
@@ -42,6 +42,9 @@
         if (s.goldenFish) { s.flags.golden = true; delete s.goldenFish; }
         s.poops ??= 0;
         s.nextPoop ??= 0;
+        s.owned ||= {};
+        // everyone starts with a few of their basic food, including pets from before the pantry existed
+        s.pantry ||= { ...cfg.starterPantry };
         return { state: s, isNew };
     }
 
@@ -149,8 +152,59 @@
 
     const statSet = s => s.hatched ? [STATS, s.stats] : [EGG_STATS, s.egg];
 
+    // ---------- the wallet: one coin purse shared by every pet ----------
+
+    const WALLET_KEY = "pets-wallet";
+    const GAME_DAILY_CAP = 60;   // most coins the minigames pay out in one day
+
+    const dayKey = (d = new Date()) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+
+    // always read it fresh, since another pet's tab may have spent or earned since
+    function loadWallet() {
+        let w = null;
+        try { w = JSON.parse(localStorage.getItem(WALLET_KEY)); } catch (e) {}
+        return Object.assign({ coins: 20, streak: 0, lastDay: "", gameDay: "", gameCoins: 0 }, w || {});
+    }
+
+    function saveWallet(w) { try { localStorage.setItem(WALLET_KEY, JSON.stringify(w)); } catch (e) {} }
+
+    function changeCoins(n) {
+        const w = loadWallet();
+        w.coins = Math.max(0, w.coins + n);
+        saveWallet(w);
+        return w.coins;
+    }
+
+    // the first visit of the day pays out, and more for every day in a row
+    function claimDaily() {
+        const w = loadWallet();
+        const today = dayKey();
+        if (w.lastDay === today) return null;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        w.streak = w.lastDay === dayKey(yesterday) ? w.streak + 1 : 1;
+        w.lastDay = today;
+        const bonus = Math.min(10 + 5 * (w.streak - 1), 40);
+        w.coins += bonus;
+        saveWallet(w);
+        return { bonus, streak: w.streak };
+    }
+
+    // minigame winnings, up to the daily cap. Returns what was actually paid.
+    function earnFromGame(n) {
+        const w = loadWallet();
+        const today = dayKey();
+        if (w.gameDay !== today) { w.gameDay = today; w.gameCoins = 0; }
+        const paid = Math.max(0, Math.min(n, GAME_DAILY_CAP - w.gameCoins));
+        w.gameCoins += paid;
+        w.coins += paid;
+        saveWallet(w);
+        return paid;
+    }
+
     window.PetCore = {
         EGG, STATS, EGG_STATS, clamp, fresh, load, save, ageMs, isBaby, stage, bump, logEvent, tick,
-        crackLevel, eggCold, mood, moodInfo, ageText, prefix, statSet
+        crackLevel, eggCold, mood, moodInfo, ageText, prefix, statSet,
+        loadWallet, saveWallet, changeCoins, claimDaily, earnFromGame, GAME_DAILY_CAP
     };
 })();

@@ -339,7 +339,64 @@ def fishhat(c, g):
     c.set(12, t - 1, "white")
 
 
-ACCESSORIES = [("tophat", tophat), ("beanie", beanie), ("bow", bow), ("crown", crown), ("shades", shades),
+def wizard(c, g):
+    t = g.head_top
+    for x in range(8, 24):
+        c.set(x, t + 1, "wizarddk")
+    for i, (x0, x1) in enumerate(((11, 20), (12, 19), (13, 18), (14, 17))):
+        for x in range(x0, x1 + 1):
+            c.set(x, t - i, "wizard")
+    c.set(17, t - 4, "wizard"); c.set(18, t - 4, "wizard")
+    for (x, y) in ((13, t), (17, t - 1), (15, t - 2)):
+        c.set(x, y, "yellow")
+
+
+def chef(c, g):
+    t = g.head_top
+    for x in range(10, 22):
+        c.set(x, t + 1, "shade"); c.set(x, t, "white")
+    c.ellipse(16, t - 1.5, 7, 2.6, "white")
+    for x in (12, 16, 19):
+        c.set(x, t - 1, "shade")
+
+
+def halo(c, g):
+    t = g.head_top - 2
+    for x in range(12, 20):
+        c.set(x, t - 1, "gold"); c.set(x, t + 1, "golddk")
+    c.set(11, t, "gold"); c.set(20, t, "gold")
+
+
+def pirate(c, g):
+    t = g.head_top
+    for x in range(8, 24):
+        c.set(x, t + 1, "pirate")
+    for x in range(9, 23):
+        c.set(x, t + 1, "gold" if x % 2 else "pirate")
+    for y in range(t - 2, t + 1):
+        for x in range(10 + (t - y), 22 - (t - y)):
+            c.set(x, y, "pirate")
+    c.set(15, t - 1, "white"); c.set(16, t - 1, "white"); c.set(15, t, "white"); c.set(16, t, "white")
+
+
+def monocle(c, g):
+    ey = g.eye_y
+    for (x, y) in ((17, ey - 2), (18, ey - 2), (19, ey - 2), (20, ey - 2), (16, ey - 1), (21, ey - 1), (16, ey), (21, ey),
+                   (16, ey + 1), (21, ey + 1), (17, ey + 2), (18, ey + 2), (19, ey + 2), (20, ey + 2)):
+        c.set(x, y, "gold")
+    for i in range(4):
+        c.set(21 + (i + 1) // 2, ey + 3 + i, "golddk")
+
+
+def pearls(c, g):
+    n = g.neck_y
+    for x in range(8, 24):
+        y = n + (1 if 11 <= x <= 20 else 0) + (1 if 13 <= x <= 18 else 0)
+        c.set(x, y, "pearl" if x % 2 else "pearlsh")
+
+
+ACCESSORIES = [("wizard", wizard), ("chef", chef), ("halo", halo), ("pirate", pirate), ("monocle", monocle), ("pearls", pearls),
+               ("tophat", tophat), ("beanie", beanie), ("bow", bow), ("crown", crown), ("shades", shades),
                ("scarf", scarf), ("partyhat", partyhat), ("flowers", flowers), ("headphones", headphones),
                ("bowtie", bowtie), ("heartshades", heartshades), ("fishhat", fishhat)]
 
@@ -418,6 +475,37 @@ def bobber_dip(c):
                 c.set(x, y, "red" if y < 11 else "white")
     for (x, y) in ((3, 8), (2, 6), (12, 8), (13, 6), (4, 5), (11, 5)):
         c.set(x, y, "blue")
+
+
+def sushi(c):
+    for (cx, top) in ((5, 6), (10, 6)):
+        c.ellipse(cx, 10, 3.2, 2.6, "rice")
+        for x in range(cx - 3, cx + 3):
+            c.set(x, top + 2, "salmon"); c.set(x, top + 3, "salmon")
+        for y in range(top + 4, top + 7):
+            c.set(cx - 1, y, "nori"); c.set(cx, y, "nori")
+    for x in range(1, 15):
+        c.set(x, 13, "brown")
+
+
+def taco(c):
+    for y in range(5, 13):
+        for x in range(2, 14):
+            if (x - 7.5) ** 2 / 36 + (y - 12) ** 2 / 49 <= 1 and y >= 6:
+                c.set(x, y, "gold" if y > 7 else "beak")
+    for x in range(3, 13):
+        c.set(x, 5 + (x % 2), "leaf")
+    for x in (4, 7, 10):
+        c.set(x, 6, "red")
+    c.set(6, 5, "fish"); c.set(9, 5, "fish")
+
+
+def icecream(c):
+    for i, y in enumerate(range(8, 15)):
+        for x in range(4 + i // 2, 12 - i // 2):
+            c.set(x, y, "cone" if (x + y) % 3 else "conedk")
+    c.ellipse(8, 6, 4.4, 3.4, "icecream")
+    c.set(6, 4, "white"); c.set(8, 1, "red"); c.set(8, 2, "red"); c.set(9, 1, "red")
 
 
 def build(out):
@@ -505,3 +593,6 @@ def build(out):
     out.prop("rod", rod)
     out.prop("bobber", bobber)
     out.prop("bobber_dip", bobber_dip)
+    out.prop("sushi", sushi)
+    out.prop("taco", taco)
+    out.prop("icecream", icecream)

@@ -75,6 +75,10 @@
         header { display: grid; gap: 8px; text-align: center; }
         h1 { margin: 0; font-size: clamp(40px, 9vw, 64px); line-height: 1; letter-spacing: 0.02em; text-shadow: 0 4px 0 var(--ink); }
         .tagline { margin: 0; font-size: 18px; color: var(--muted); text-wrap: balance; }
+        .purse { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 16px; }
+        .purse img { width: 20px; height: 20px; image-rendering: pixelated; }
+        .purse b { font-family: var(--mono); font-size: 24px; font-weight: 400; color: var(--warn); }
+        #daily { color: var(--good); }
 
         .pets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 20px; }
 
@@ -142,12 +146,14 @@
         <header>
             <h1>valerie.wtf</h1>
             <p class="tagline">Tiny pixel pets live here. Pick one to look after.</p>
+            <p class="purse"><img src="sprites/sudo/coin.png" alt=""><b id="coins">0</b> coins <span id="daily"></span></p>
         </header>
 
         <section class="pets" id="pets" aria-label="Pets"></section>
 
         <footer>
             <p>Each pet's stats keep changing while you're away, so check on them now and then.</p>
+            <p>Coins are shared by every pet. Earn them by looking after your pets, playing their minigames, and visiting every day.</p>
             <p>valerie.wtf used to be a Linux terminal. It's still around in the <a href="archive/terminal-v2.html">archive</a>.</p>
         </footer>
     </main>
@@ -228,8 +234,15 @@
             }
         }
 
+        // one purse for every pet, and a bonus for visiting each day
+        const daily = core.claimDaily();
+        if (daily) document.getElementById("daily").textContent = `+${daily.bonus} daily bonus${daily.streak > 1 ? `, ${daily.streak} days in a row!` : "!"}`;
+        const showCoins = () => { document.getElementById("coins").textContent = core.loadWallet().coins; };
+
         render();
+        showCoins();
         setInterval(() => { tickN++; frame(); }, 700);
+        addEventListener("pageshow", showCoins);
         setInterval(render, 30000);
         addEventListener("pageshow", render);
         document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
