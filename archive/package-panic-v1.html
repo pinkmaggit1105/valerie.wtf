@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Package Panic</title>
+    <meta name="description" content="A typing game: type the right package manager command before the request hits the bottom.">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --panel: #0c0c0c;
+            --bar: #2b2b2b;
+            --fg: #cccccc;
+            --dim: #767676;
+            --green: #4ae24a;
+            --blue: #6b9bff;
+            --yellow: #e5c07b;
+            --red: #f14c4c;
+            --purple: #c678dd;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: "Ubuntu Mono", "DejaVu Sans Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 15px;
+        }
+
+        body {
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .window {
+            width: 100%;
+            max-width: 920px;
+            height: min(720px, calc(100vh - 32px));
+            height: min(720px, calc(100dvh - 32px));
+            display: flex;
+            flex-direction: column;
+            background: var(--panel);
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        .titlebar {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 14px;
+            background: var(--bar);
+            color: #bbbbbb;
+            font-size: 13px;
+            user-select: none;
+        }
+
+        .dots { position: absolute; left: 14px; display: flex; gap: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.r { background: #ff5f57; }
+        .dot.y { background: #febc2e; }
+        .dot.g { background: #28c840; }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 16px;
+            border-bottom: 1px solid #3a3a3a;
+            font-size: 14px;
+        }
+
+        #field {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* the line requests must not cross */
+        #field::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-bottom: 1px dashed rgba(241, 76, 76, 0.5);
+        }
+
+        .card {
+            position: absolute;
+            top: 0;
+            max-width: 46%;
+            padding: 6px 10px;
+            background: #161616;
+            border: 1px solid #444;
+            border-radius: 4px;
+            white-space: nowrap;
+            will-change: transform;
+        }
+
+        .card.danger { border-color: var(--red); }
+        .card.pop { animation: pop 0.35s ease-out forwards; }
+        @keyframes pop { to { opacity: 0; scale: 1.4; } }
+
+        .float {
+            position: absolute;
+            color: var(--green);
+            font-weight: bold;
+            pointer-events: none;
+            animation: rise 0.9s ease-out forwards;
+        }
+
+        @keyframes rise { to { transform: translateY(-40px); opacity: 0; } }
+
+        #overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            padding: 16px;
+            text-align: center;
+            background: rgba(12, 12, 12, 0.92);
+            line-height: 1.5;
+            z-index: 2;
+        }
+
+        #overlay[hidden] { display: none; }
+        #overlay h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 6vw, 2.6rem); color: var(--green); }
+
+        #log {
+            height: calc(4.8em + 12px);
+            overflow: hidden;
+            padding: 6px 16px;
+            border-top: 1px solid #3a3a3a;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .inputline {
+            display: flex;
+            gap: 8px;
+            padding: 10px 16px;
+            border-top: 1px solid #3a3a3a;
+            background: #111;
+        }
+
+        .inputline.wrong { animation: shake 0.25s; }
+        @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+        #cmd {
+            flex: 1;
+            min-width: 0;
+            background: transparent;
+            border: 0;
+            outline: 0;
+            color: var(--fg);
+            font: inherit;
+            caret-color: var(--fg);
+            padding: 0;
+        }
+
+        .pu { color: var(--green); font-weight: bold; }
+        .pp { color: var(--blue); font-weight: bold; }
+        .green { color: var(--green); }
+        .blue { color: var(--blue); }
+        .yellow { color: var(--yellow); }
+        .red { color: var(--red); }
+        .purple { color: var(--purple); }
+        .dim { color: var(--dim); }
+
+        a { color: var(--blue); }
+
+        @media (max-width: 600px) {
+            html, body { font-size: 13px; }
+            body { padding: 0; }
+            .window { height: 100vh; height: 100dvh; border-radius: 0; border: 0; }
+            .card { max-width: 70%; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="window">
+        <div class="titlebar">
+            <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+            <span>package-panic — valerie.wtf</span>
+        </div>
+        <div class="hud">
+            <span>score <span class="green" id="score">0</span></span>
+            <span>combo <span class="yellow" id="combo">x1</span></span>
+            <span>lives <span class="red" id="lives">♥♥♥</span></span>
+            <span>best <span class="blue" id="best">0</span></span>
+        </div>
+        <div id="field">
+            <div id="overlay"></div>
+        </div>
+        <div id="log"></div>
+        <div class="inputline" id="inputline">
+            <span><span class="pu">you@panic</span>:<span class="pp">~</span>$</span>
+            <input id="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="type a command">
+        </div>
+    </div>
+
+    <script>
+        // ---------- data (same commands as the terminal on the home page) ----------
+
+        const TASKS = {
+            refresh: "refresh package list",
+            upgrade: "upgrade everything",
+            install: "install",
+            remove: "remove",
+            search: "search for",
+            info: "show info for",
+            list: "list installed",
+            orphans: "remove unused deps",
+            clean: "clear the cache"
+        };
+
+        // first entry is the answer shown when you miss; the rest are also accepted
+        const MANAGERS = {
+            apt: {
+                refresh: ["sudo apt update", "sudo apt-get update"],
+                upgrade: ["sudo apt upgrade", "sudo apt full-upgrade", "sudo apt-get upgrade", "sudo apt-get dist-upgrade"],
+                install: ["sudo apt install PKG", "sudo apt-get install PKG"],
+                remove: ["sudo apt remove PKG", "sudo apt purge PKG", "sudo apt-get remove PKG", "sudo apt-get purge PKG"],
+                search: ["apt search PKG", "apt-cache search PKG"],
+                info: ["apt show PKG", "apt-cache show PKG"],
+                list: ["apt list --installed", "dpkg -l"],
+                orphans: ["sudo apt autoremove", "sudo apt-get autoremove"],
+                clean: ["sudo apt clean", "sudo apt-get clean", "sudo apt autoclean"]
+            },
+            pacman: {
+                refresh: ["sudo pacman -Sy"],
+                upgrade: ["sudo pacman -Syu"],
+                install: ["sudo pacman -S PKG", "sudo pacman -S --needed PKG"],
+                remove: ["sudo pacman -Rns PKG", "sudo pacman -Rs PKG", "sudo pacman -R PKG"],
+                search: ["pacman -Ss PKG"],
+                info: ["pacman -Si PKG", "pacman -Qi PKG"],
+                list: ["pacman -Q", "pacman -Qe"],
+                orphans: ["sudo pacman -Rns $(pacman -Qdtq)"],
+                clean: ["sudo pacman -Sc", "sudo pacman -Scc", "paccache -r"]
+            },
+            dnf: {
+                refresh: ["dnf check-update", "sudo dnf makecache"],
+                upgrade: ["sudo dnf upgrade", "sudo dnf update"],
+                install: ["sudo dnf install PKG"],
+                remove: ["sudo dnf remove PKG"],
+                search: ["dnf search PKG"],
+                info: ["dnf info PKG"],
+                list: ["dnf list --installed", "dnf list installed"],
+                orphans: ["sudo dnf autoremove"],
+                clean: ["sudo dnf clean all"]
+            },
+            zypper: {
+                refresh: ["sudo zypper refresh", "sudo zypper ref"],
+                upgrade: ["sudo zypper update", "sudo zypper up", "sudo zypper dup", "sudo zypper dist-upgrade"],
+                install: ["sudo zypper install PKG", "sudo zypper in PKG"],
+                remove: ["sudo zypper remove --clean-deps PKG", "sudo zypper remove PKG", "sudo zypper rm PKG"],
+                search: ["zypper search PKG", "zypper se PKG"],
+                info: ["zypper info PKG", "zypper if PKG"],
+                list: ["zypper search --installed-only", "zypper se -i"],
+                orphans: ["zypper packages --unneeded"],
+                clean: ["sudo zypper clean", "sudo zypper clean --all"]
+            },
+            apk: {
+                refresh: ["apk update"],
+                upgrade: ["apk upgrade"],
+                install: ["apk add PKG"],
+                remove: ["apk del PKG"],
+                search: ["apk search PKG"],
+                info: ["apk info -a PKG", "apk info PKG"],
+                list: ["apk info", "apk list --installed"],
+                clean: ["apk cache clean"]
+            },
+            xbps: {
+                refresh: ["sudo xbps-install -S"],
+                upgrade: ["sudo xbps-install -Su"],
+                install: ["sudo xbps-install -S PKG", "sudo xbps-install PKG"],
+                remove: ["sudo xbps-remove -R PKG", "sudo xbps-remove PKG"],
+                search: ["xbps-query -Rs PKG"],
+                info: ["xbps-query -RS PKG", "xbps-query -S PKG"],
+                list: ["xbps-query -l"],
+                orphans: ["sudo xbps-remove -o"],
+                clean: ["sudo xbps-remove -O"]
+            },
+            portage: {
+                refresh: ["sudo emerge --sync", "sudo emaint sync -a"],
+                upgrade: ["sudo emerge -avuDN @world", "sudo emerge --ask --update --deep --newuse @world"],
+                install: ["sudo emerge -av PKG", "sudo emerge --ask PKG", "sudo emerge PKG"],
+                remove: ["sudo emerge --deselect PKG", "sudo emerge -C PKG", "sudo emerge --unmerge PKG"],
+                search: ["emerge -s PKG", "emerge --search PKG", "eix PKG"],
+                info: ["emerge -pv PKG", "equery meta PKG"],
+                list: ["qlist -I"],
+                orphans: ["sudo emerge --depclean", "sudo emerge -c"],
+                clean: ["sudo eclean distfiles"]
+            },
+            nix: {
+                refresh: ["sudo nix-channel --update"],
+                upgrade: ["sudo nixos-rebuild switch --upgrade"],
+                install: ["nix-env -iA nixos.PKG", "nix profile install nixpkgs#PKG", "nix-shell -p PKG"],
+                remove: ["nix-env -e PKG", "nix profile remove PKG"],
+                search: ["nix search nixpkgs PKG"],
+                info: ["nix eval nixpkgs#PKG.meta.description"],
+                list: ["nix-env -q", "nix profile list"],
+                orphans: ["sudo nix-collect-garbage -d"],
+                clean: ["sudo nix-collect-garbage", "nix-store --gc"]
+            }
+        };
+
+        const DISTROS = {
+            "Mint": { mgr: "apt", color: "green" },
+            "Ubuntu": { mgr: "apt", color: "yellow" },
+            "Debian": { mgr: "apt", color: "red" },
+            "Arch": { mgr: "pacman", color: "blue" },
+            "Manjaro": { mgr: "pacman", color: "green" },
+            "Fedora": { mgr: "dnf", color: "blue" },
+            "openSUSE": { mgr: "zypper", color: "green" },
+            "Alpine": { mgr: "apk", color: "blue" },
+            "Void": { mgr: "xbps", color: "green" },
+            "Gentoo": { mgr: "portage", color: "purple" },
+            "NixOS": { mgr: "nix", color: "blue" }
+        };
+
+        const MODES = {
+            easy: { distros: ["Mint", "Ubuntu", "Debian", "Arch", "Manjaro", "Fedora"], tasks: ["install", "remove", "upgrade", "search"] },
+            hard: { distros: Object.keys(DISTROS), tasks: Object.keys(TASKS) }
+        };
+
+        const PKGS = ["firefox", "vlc", "git", "neovim", "htop", "gimp", "curl", "btop", "steam", "obs-studio", "fastfetch", "discord"];
+
+        // ---------- elements & state ----------
+
+        const field = document.getElementById("field");
+        const overlay = document.getElementById("overlay");
+        const input = document.getElementById("cmd");
+        const logEl = document.getElementById("log");
+        const inputline = document.getElementById("inputline");
+        const hud = {
+            score: document.getElementById("score"),
+            combo: document.getElementById("combo"),
+            lives: document.getElementById("lives"),
+            best: document.getElementById("best")
+        };
+
+        let state = "menu";   // menu | playing | paused | over
+        let mode = "easy";
+        let cards = [];
+        let score = 0, combo = 0, lives = 3, cleared = 0;
+        let spawnTimer = 0, elapsed = 0, lastFrame = 0;
+        let best = 0;
+        try { best = Number(localStorage.getItem("panic-best")) || 0; } catch (e) {}
+
+        const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+        const norm = s => s.trim().replace(/\s+/g, " ").replace(/^(sudo|doas) /, "");
+        const pick = a => a[Math.floor(Math.random() * a.length)];
+
+        function log(html) {
+            const div = document.createElement("div");
+            div.innerHTML = html;
+            logEl.prepend(div);
+            while (logEl.children.length > 3) logEl.lastChild.remove();
+        }
+
+        function renderHud() {
+            hud.score.textContent = score;
+            hud.combo.textContent = "x" + Math.min(1 + Math.floor(combo / 3), 5);
+            hud.lives.textContent = "♥".repeat(Math.max(lives, 0)) || "💀";
+            hud.best.textContent = best;
+        }
+
+        // ---------- cards ----------
+
+        function spawn() {
+            const m = MODES[mode];
+            const distro = pick(m.distros);
+            const mgr = DISTROS[distro].mgr;
+            const tasks = m.tasks.filter(t => MANAGERS[mgr][t]);
+            const task = pick(tasks);
+            const pkg = MANAGERS[mgr][task][0].includes("PKG") ? pick(PKGS) : null;
+
+            const el = document.createElement("div");
+            el.className = "card";
+            el.innerHTML = `<span class="${DISTROS[distro].color}">${distro}</span>: ${esc(TASKS[task])}${pkg ? ` <b>${pkg}</b>` : ""}`;
+            field.appendChild(el);
+            const maxLeft = Math.max(0, field.clientWidth - el.offsetWidth - 8);
+            el.style.left = 8 + Math.random() * maxLeft + "px";
+
+            // speed ramps up the longer you survive
+            const fallTime = Math.max(5, (mode === "easy" ? 16 : 14) - elapsed / 12);
+            cards.push({
+                el, distro, task, pkg,
+                answers: MANAGERS[mgr][task].map(t => norm(t.replace("PKG", pkg))),
+                y: -el.offsetHeight,
+                speed: (field.clientHeight + el.offsetHeight) / fallTime
+            });
+        }
+
+        function removeCard(card) {
+            cards = cards.filter(c => c !== card);
+        }
+
+        // ---------- game loop ----------
+
+        function frame(now) {
+            if (state !== "playing") return;
+            const dt = Math.min((now - lastFrame) / 1000, 0.1);
+            lastFrame = now;
+            elapsed += dt;
+
+            spawnTimer -= dt;
+            if (spawnTimer <= 0) {
+                spawn();
+                spawnTimer = Math.max(1.4, 4.2 - elapsed / 25);
+            }
+
+            const floor = field.clientHeight;
+            for (const c of [...cards]) {
+                c.y += c.speed * dt;
+                c.el.style.transform = `translateY(${c.y}px)`;
+                c.el.classList.toggle("danger", c.y + c.el.offsetHeight > floor * 0.75);
+                if (c.y + c.el.offsetHeight >= floor) miss(c);
+            }
+
+            if (state === "playing") requestAnimationFrame(frame);
+        }
+
+        function miss(card) {
+            removeCard(card);
+            card.el.remove();
+            lives--;
+            combo = 0;
+            log(`<span class="red">💥 missed</span> ${card.distro}: ${esc(TASKS[card.task])}${card.pkg ? " " + card.pkg : ""} <span class="dim">→</span> <span class="blue">${esc(MANAGERS[DISTROS[card.distro].mgr][card.task][0].replace("PKG", card.pkg))}</span>`);
+            renderHud();
+            if (lives <= 0) gameOver();
+        }
+
+        function submit(text) {
+            const typed = norm(text);
+            if (!typed) return;
+            // if several cards match, clear the one closest to the floor
+            const hit = cards.filter(c => c.answers.includes(typed)).sort((a, b) => b.y - a.y)[0];
+            if (!hit) {
+                combo = 0;
+                inputline.classList.remove("wrong");
+                void inputline.offsetWidth;
+                inputline.classList.add("wrong");
+                log(`<span class="red">✗</span> <span class="dim">${esc(text.trim())} doesn't match anything on screen</span>`);
+                renderHud();
+                return;
+            }
+            combo++;
+            cleared++;
+            const mult = Math.min(1 + Math.floor((combo - 1) / 3), 5);
+            const points = 100 * mult;
+            score += points;
+
+            const f = document.createElement("div");
+            f.className = "float";
+            f.textContent = `+${points}`;
+            f.style.left = hit.el.style.left;
+            f.style.top = hit.y + "px";
+            field.appendChild(f);
+            setTimeout(() => f.remove(), 900);
+
+            removeCard(hit);
+            hit.el.classList.add("pop");
+            setTimeout(() => hit.el.remove(), 350);
+            log(`<span class="green">✓</span> ${esc(typed)}${mult > 1 ? ` <span class="yellow">combo x${mult}!</span>` : ""}`);
+            renderHud();
+        }
+
+        // ---------- screens ----------
+
+        function showOverlay(html) {
+            overlay.innerHTML = html;
+            overlay.hidden = false;
+        }
+
+        function menu() {
+            state = "menu";
+            showOverlay(`
+                <h1>📦 PACKAGE PANIC</h1>
+                <div>package requests are falling. type the right command before they hit the floor!</div>
+                <div class="dim">e.g. <span class="blue">Arch: install git</span> → <span class="green">sudo pacman -S git</span> &nbsp;(sudo is optional)</div>
+                <br>
+                <div>type <span class="green">easy</span> (apt, pacman, dnf · 4 tasks) or <span class="red">hard</span> (every distro, every task)</div>
+                <div class="dim">and press Enter</div>
+                <br>
+                <div class="dim">type <span class="blue">exit</span> to go back to the <a href="../">terminal</a></div>
+            `);
+        }
+
+        function start(m) {
+            mode = m;
+            cards.forEach(c => c.el.remove());
+            cards = [];
+            score = 0; combo = 0; lives = 3; cleared = 0; elapsed = 0;
+            spawnTimer = 0.5;
+            logEl.innerHTML = "";
+            log(`<span class="dim">${m} mode. good luck 🫡</span>`);
+            overlay.hidden = true;
+            renderHud();
+            state = "playing";
+            lastFrame = performance.now();
+            requestAnimationFrame(frame);
+        }
+
+        function gameOver() {
+            state = "over";
+            cards.forEach(c => c.el.remove());
+            cards = [];
+            const record = score > best;
+            if (record) {
+                best = score;
+                try { localStorage.setItem("panic-best", best); } catch (e) {}
+            }
+            renderHud();
+            const rank = score >= 3000 ? "certified sysadmin 🧙" : score >= 1500 ? "distro hopper 🐸" : score >= 500 ? "terminal enjoyer 💻" : "windows user (affectionate) 🪟";
+            showOverlay(`
+                <h1>kernel panic 💀</h1>
+                <div>score: <span class="green">${score}</span> · cleared ${cleared} request${cleared === 1 ? "" : "s"} · survived ${Math.round(elapsed)}s</div>
+                <div>${record ? '<span class="yellow">🏆 NEW BEST!</span>' : `best: <span class="blue">${best}</span>`}</div>
+                <div>rank: ${rank}</div>
+                <br>
+                <div class="dim">your misses are listed below 👇 learn them!</div>
+                <div>type <span class="green">easy</span> or <span class="red">hard</span> to play again, or <span class="blue">exit</span></div>
+            `);
+        }
+
+        function pause() {
+            if (state !== "playing") return;
+            state = "paused";
+            showOverlay(`<h1>paused</h1><div class="dim">press Enter to keep going</div>`);
+        }
+
+        function resume() {
+            state = "playing";
+            overlay.hidden = true;
+            lastFrame = performance.now();
+            requestAnimationFrame(frame);
+        }
+
+        // ---------- input ----------
+
+        input.addEventListener("keydown", e => {
+            if (e.key === "Escape") { state === "paused" ? resume() : pause(); return; }
+            if (e.key !== "Enter") return;
+            const text = input.value;
+            input.value = "";
+            const word = text.trim().toLowerCase();
+
+            if (word === "exit" || word === "quit") { location.href = "../"; return; }
+            if (state === "paused") { resume(); return; }
+            if (state === "playing") { submit(text); return; }
+            if (word === "easy" || word === "hard") start(word);
+        });
+
+        // pause when the tab or window loses focus so cards don't fall while you're away
+        document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+        window.addEventListener("blur", pause);
+
+        document.addEventListener("pointerdown", e => {
+            if (e.target.tagName !== "A") setTimeout(() => input.focus(), 0);
+        });
+
+        renderHud();
+        menu();
+        input.focus();
+    </script>
+
+</body>
+
+</html>
