@@ -352,8 +352,9 @@
             idle_happy: 2, idle_neutral: 2, idle_hungry: 2, idle_sad: 2, idle_stinky: 2, idle_sleepy: 2,
             idle_sick: 2, idle_overfed: 2, idle_ecstatic: 2, blink: 1, pet: 2, eat: 3, bath: 2, play: 2, sleep: 2
         };
-        for (const [name, n] of Object.entries(FRAMES))
-            for (let i = 1; i <= n; i++) new Image().src = `sprites/${name}_${i}.png`;
+        for (const prefix of ["baby_", ""])
+            for (const [name, n] of Object.entries(FRAMES))
+                for (let i = 1; i <= n; i++) new Image().src = `sprites/${prefix}${name}_${i}.png`;
 
         // ---------- state ----------
 
@@ -366,12 +367,13 @@
         };
 
         const MAX_CATCHUP_H = 24 * 14;
+        const GROW_UP_H = 72;   // he's a fluffy baby for his first 3 days
         const SAVE_KEY = "sudo-pet";
 
         function freshPenguin() {
             const now = Date.now();
             return {
-                born: now, last: now, asleep: false, overfedUntil: 0,
+                born: now, last: now, asleep: false, overfedUntil: 0, grown: false,
                 stats: { food: 70, fun: 70, clean: 90, energy: 80, health: 100 },
                 counts: {}, log: []
             };
@@ -381,6 +383,11 @@
         let isNew = false;
         try { sudo = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) {}
         if (!sudo || !sudo.stats) { sudo = freshPenguin(); isNew = true; }
+
+        let grewUp = false;
+
+        const ageMs = () => Date.now() - sudo.born;
+        const isBaby = () => ageMs() < GROW_UP_H * 36e5;
 
         function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(sudo)); } catch (e) {} }
 
@@ -401,6 +408,11 @@
                 if (s.food < 15 || s.clean < 15) bump("health", -6 * h);
                 else if (s.food > 40 && s.clean > 40) bump("health", 3 * h);
                 if (sudo.asleep && s.energy >= 100) { sudo.asleep = false; logEvent("woke up all on his own ☀️"); }
+            }
+            if (!sudo.grown && !isBaby()) {
+                sudo.grown = true;
+                grewUp = true;
+                logEvent("grew up into a big penguin! 🐧");
             }
             save();
         }
@@ -452,7 +464,8 @@
         function age() {
             const mins = Math.floor((Date.now() - sudo.born) / 6e4);
             const d = Math.floor(mins / 1440), h = Math.floor(mins / 60) % 24, m = mins % 60;
-            return d ? `${d}d ${h}h old` : h ? `${h}h ${m}m old` : `${m}m old`;
+            const old = d ? `${d}d ${h}h old` : h ? `${h}h ${m}m old` : `${m}m old`;
+            return isBaby() ? `baby · ${old}` : old;
         }
 
         const level = v => v < 30 ? "bad" : v < 60 ? "warn" : "good";
@@ -473,6 +486,12 @@
             $("mood").dataset.level = lvl;
             $("hint").textContent = hint;
             $("age").textContent = age();
+            sudoEl.alt = isBaby() ? "Baby Sudo, a fluffy penguin chick. Tap to pet him." : "Sudo the penguin. Tap to pet him.";
+            if (grewUp) {
+                grewUp = false;
+                say("✨ Sudo grew up!! He's a big penguin now 🐧", 4500);
+                burst("sparkle", 5);
+            }
             sceneEl.classList.toggle("night", sudo.asleep);
             $("sleepBtn").setAttribute("aria-pressed", sudo.asleep);
             $("sleepBtn").querySelector("span").textContent = sudo.asleep ? "Wake" : "Sleep";
@@ -492,7 +511,7 @@
                 if (canBlink && now > blinkUntil + 2500 && Math.random() < 0.02) blinkUntil = now + 160;
                 if (canBlink && now < blinkUntil) { name = "blink"; frame = 0; }
             }
-            const src = `sprites/${name}_${frame + 1}.png`;
+            const src = `sprites/${isBaby() ? "baby_" : ""}${name}_${frame + 1}.png`;
             if (!sudoEl.src.endsWith(src)) sudoEl.src = src;
         }
 
@@ -725,7 +744,10 @@
                 ol.appendChild(li);
             }
             const c = sudo.counts;
-            $("counts").innerHTML = `Fish eaten: ${c.feed || 0} · Pets: ${c.pet || 0} · Baths: ${c.bathe || 0} · Ball games: ${c.play || 0}<br>
+            const hoursLeft = Math.ceil((GROW_UP_H * 36e5 - ageMs()) / 36e5);
+            const days = Math.floor(hoursLeft / 24);
+            const growing = isBaby() ? `Grows up in ${days ? days + "d " : ""}${hoursLeft % 24}h 🐣<br>` : "";
+            $("counts").innerHTML = growing + `Fish eaten: ${c.feed || 0} · Pets: ${c.pet || 0} · Baths: ${c.bathe || 0} · Ball games: ${c.play || 0}<br>
                 Also on valerie.wtf: <a href="game/">Package Panic</a> · <a href="archive/terminal-v2.html">the old terminal</a>`;
         }
 
@@ -745,11 +767,12 @@
         }
 
         tick();
+        // if he just grew up, renderHud announces that instead
         if (isNew) {
             logEvent("hatched! 🐣");
             save();
-            setTimeout(() => say("🐣 Sudo hatched! He's yours now. Say hi!", 4000), 400);
-        } else {
+            setTimeout(() => say("🐣 Sudo hatched! He's a tiny baby. Look after him and he'll grow up in 3 days!", 4500), 400);
+        } else if (!grewUp) {
             setTimeout(() => say(`Welcome back! ${MOODS[mood()][2]}`, 3500), 400);
         }
 
