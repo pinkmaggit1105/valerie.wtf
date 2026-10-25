@@ -1,6 +1,6 @@
 """Draws Sudo's 32x32 pixel-art sprites.
 
-Usage: python3 make_sprites.py sprites [preview.png]
+Usage: python3 tools/make_sprites.py sprites [preview.png]
 Needs Pillow. The optional second argument writes a zoomed-in sheet of every sprite.
 """
 import os, sys
@@ -315,11 +315,90 @@ def ball(c, cy, f):
 made += mood("play", "happy", ball, mouth_open=True)
 made += mood("sleep", "closed", zzz, cheeks=False)
 
-# props (16x16 drawn into the corner of a canvas, then cropped)
-c = Canvas(); fish_px(c, 5, 7); c.outline()
-c.image().crop((0, 0, 16, 16)).save(os.path.join(OUT, "fish.png")); made.append("fish")
-c = Canvas(); heart_px(c, 6, 6); c.outline()
-c.image().crop((0, 0, 16, 16)).save(os.path.join(OUT, "heart.png")); made.append("heart")
+# props: 16x16 items you drag onto Sudo, plus particles
+def prop(name, draw, outline=True):
+    c = Canvas()
+    draw(c)
+    if outline:
+        c.outline()
+    c.image().crop((0, 0, 16, 16)).save(os.path.join(OUT, f"{name}.png"))
+    made.append(name)
+
+
+def soap(c):
+    for y in range(8, 13):
+        for x in range(2, 13):
+            c.set(x, y, "pink" if y > 8 else "white")
+    for x, y in ((4, 5), (8, 3), (11, 6)):
+        c.set(x, y, "blue")
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            c.set(x + dx, y + dy, "blue")
+        c.set(x, y, "white")
+
+
+def ball_prop(c):
+    for y in range(3, 13):
+        for x in range(3, 13):
+            if (x - 7.5) ** 2 + (y - 7.5) ** 2 <= 21:
+                c.set(x, y, "green")
+    for x in range(3, 13):
+        c.set(x, 7 + (1 if 5 < x < 10 else 0), "yellow")
+    c.set(5, 5, "white")
+
+
+def pill(c):
+    for y in range(5, 11):
+        for x in range(2, 14):
+            if (x < 5 or x > 10) and ((x - (4.5 if x < 8 else 10.5)) ** 2 + (y - 7.5) ** 2 > 9):
+                continue
+            c.set(x, y, "red" if x < 8 else "white")
+    c.set(4, 6, "white")
+
+
+def moon(c):
+    for y in range(2, 14):
+        for x in range(2, 14):
+            if (x - 7.5) ** 2 + (y - 7.5) ** 2 <= 30 and (x - 10) ** 2 + (y - 5.5) ** 2 > 18:
+                c.set(x, y, "yellow")
+
+
+def bubble(c):
+    for y in range(4, 12):
+        for x in range(4, 12):
+            d = (x - 7.5) ** 2 + (y - 7.5) ** 2
+            if 9 <= d <= 16:
+                c.set(x, y, "blue")
+    c.set(6, 6, "white"); c.set(6, 7, "white")
+
+
+def sparkle(c):
+    for i in range(-3, 4):
+        c.set(8 + i, 8, "yellow")
+        c.set(8, 8 + i, "yellow")
+    c.set(8, 8, "white")
+
+
+def big_fish(c):
+    c.ellipse(7, 8, 5.5, 3.6, "fish")
+    for x in range(2, 12):
+        for y in range(9, 12):
+            if c.get(x, y):
+                c.set(x, y, "fishdk")
+    for i in range(4):
+        for y in range(8 - i - 1, 8 + i + 1):
+            c.set(11 + i, y, "fishdk")
+    c.set(4, 7, "eye")
+    c.set(6, 5, "white")
+
+
+prop("fish", big_fish)
+prop("heart", lambda c: heart_px(c, 6, 6))
+prop("soap", soap)
+prop("ball", ball_prop)
+prop("pill", pill)
+prop("moon", moon)
+prop("bubble", bubble, outline=False)
+prop("sparkle", sparkle, outline=False)
 
 # ---------- preview sheet ----------
 if len(sys.argv) < 3:

@@ -1,87 +1,45 @@
 # valerie.wtf
 
-An interactive terminal in your browser for learning Linux package manager commands. Pick a distro, type real commands, and the terminal explains what they do, or tells you off when you use the wrong package manager.
+Sudo is a tiny pixel penguin who lives at valerie.wtf. Look after him: drag fish to him, scrub him with soap, throw him a ball, and don't let him get sick 🐧
 
 **Live at [valerie.wtf](https://valerie.wtf)**
 
-## What it does
+## Looking after Sudo
 
-- **Pick a distro:** `use mint`, `use arch`, `use fedora`, ... and the prompt changes to match
-- **Type real commands:** `sudo apt install firefox` shows simulated output and explains what it would do
-- **Get corrected:** typing `pacman` on Mint, or forgetting `sudo`, shows the right command for your distro
-- **Cheatsheets:** `cheatsheet` lists every basic command for your current distro
-- **Compare:** `compare install` shows one task across every package manager side by side
-- **Quiz:** `quiz` asks random "how do you X on distro Y?" questions and keeps score
+Drag an item from the tray onto Sudo, or just tap it and it flies over to him:
 
-Nothing actually runs. It's all simulated in the page, so feel free to type anything.
-
-## Supported distros
-
-| Package manager | Distros |
+| Item | What it does |
 | --- | --- |
-| APT | Linux Mint, Ubuntu, Debian, Pop!_OS |
-| pacman | Arch Linux, Manjaro, EndeavourOS, CachyOS |
-| DNF | Fedora, RHEL, Rocky Linux |
-| zypper | openSUSE |
-| apk | Alpine Linux |
-| XBPS | Void Linux |
-| Portage | Gentoo |
-| Nix | NixOS |
+| 🐟 Fish | Feeds him. Feed him when he's already full and he gets a tummy ache 🤢 |
+| 🧼 Soap | Bath time. Scrub him with it and bubbles come off |
+| 🎾 Ball | Play. Makes him happy, but uses up energy and food |
+| 💊 Medicine | Only does anything when he's sick |
+| 🌙 Moon | Puts him to bed, or wakes him up (he's grumpy about it). He won't go to bed if he isn't tired |
 
-It also covers **Flatpak** and **Snap**, which work on any distro (except Snap on Mint, which blocks it by default), and **yay** for the AUR on Arch-based distros.
+Tap Sudo himself to pet him 🥰
 
-## Commands
+His food, fun, cleanliness and energy go down over time, even while the tab is closed, so come back and check on him. A full tummy lasts about half a day. If he's left hungry or stinky for too long he gets sick 🤒. The **Diary** button shows everything that's happened to him.
 
-| Command | What it does |
-| --- | --- |
-| `help` | List everything |
-| `distros` | Show all supported distros |
-| `use <distro>` | Switch distro |
-| `cheatsheet` | All commands for your current distro |
-| `learn <task>` | One task in detail, with alternatives and tips |
-| `compare <task>` | One task across every package manager |
-| `about <manager>` | Everything about one package manager |
-| `quiz` | Test yourself (`hint`, `skip`, `quit`) |
-| `game` | Play Package Panic |
-| `pet` | Visit Sudo the penguin |
-| `contact` | How to reach me |
-
-Tasks: `refresh`, `upgrade`, `install`, `remove`, `search`, `info`, `list`, `orphans`, `clean`.
-
-There are LOTS of easter eggs hidden in there too, like `neofetch`, `cowsay` and a `vim` you might never escape. And whatever you do, don't run `sudo rm -rf /` 👀
-
-**Shortcuts:** ↑/↓ for command history, Tab to autocomplete, Ctrl+L to clear. On phones, use the buttons at the bottom.
+For now Sudo lives in your browser (`localStorage`), so everyone has their own Sudo. A shared version where everyone raises one Sudo together is the plan for later.
 
 ## Package Panic 🎮
 
 A typing game at [valerie.wtf/game](https://valerie.wtf/game). Package requests like "Arch: install git" fall from the top, and you type the right command (`sudo pacman -S git`) before they hit the floor. Combos multiply your score, it gets faster the longer you last, and every miss shows you the right answer. Pick `easy` (Mint, Ubuntu, Debian, Arch, Manjaro, Fedora and four tasks) or `hard` (every distro, every task).
 
-## Sudo the penguin 🐧
+## The old terminal
 
-A tiny pixel penguin who lives at [valerie.wtf/pet](https://valerie.wtf/pet). Look after him with terminal commands: `feed`, `pet`, `bathe`, `play`, `sleep` and `heal` (or click him to pet him). His food, fun, cleanliness and energy go down over time, even while the tab is closed, and if he's left hungry or stinky for too long he gets sick. Don't overfeed him either, he gets a tummy ache 🤢
-
-Check on him with `status`, `systemctl status sudo`, or read his diary with `journalctl -u sudo`.
-
-For now Sudo lives in your browser (`localStorage`), so everyone has their own Sudo. A shared, everyone-raises-him-together version is the plan for later.
+valerie.wtf used to be an interactive terminal for learning Linux package manager commands (APT, pacman, DNF, zypper and more). It still works at [valerie.wtf/archive/terminal-v2.html](https://valerie.wtf/archive/terminal-v2.html).
 
 ## How it's built
 
 Each page is a single HTML file with plain HTML, CSS and JavaScript: no frameworks, no build step, no dependencies. It's hosted on GitHub Pages with the custom domain set in `CNAME`.
 
-- `index.html`: the terminal
+- `index.html`: Sudo
+- `sprites/`: Sudo's 32×32 pixel-art sprites and the 16×16 items. They're drawn by `tools/make_sprites.py` (needs Pillow: `python3 tools/make_sprites.py sprites preview.png`), so a new sprite is a few lines of Python
 - `game/index.html`: Package Panic
-- `pet/index.html`: Sudo the penguin, with his sprites in `pet/sprites/`. They're drawn by `pet/make_sprites.py` (needs Pillow: `python3 pet/make_sprites.py pet/sprites preview.png`), so a new sprite is a few lines of Python
 - `archive/`: snapshots of older versions of the site, like `terminal-v1.html`, `terminal-v2.html` and `package-panic-v1.html`
 
-To run it locally, just open `index.html` in a browser.
-
-### Adding a distro or command
-
-All the data lives at the top of the `<script>` in `index.html`:
-
-- `DISTROS` maps a distro to its package manager
-- `MANAGERS` has each package manager's commands per task. The first command in each list is the one the terminal teaches, and the others are accepted alternatives. `PKG` is the placeholder for a package name
-- `EXTRAS` holds the managers that aren't tied to one distro (Flatpak, Snap, yay)
+To run it locally, open `index.html` in a browser.
 
 ## Contact
 
